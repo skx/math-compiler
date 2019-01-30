@@ -52,8 +52,8 @@ Returning to our previous example of `2 + ( 4 * 54)` we can execute that via:
 
     $ math-compiler '4 54 * 2+' > sample.s
     $ gcc -static -o sample ./sample.s
-    $ ./sample ; echo $?
-    218
+    $ ./sample
+    Result 218
 
 And you can compare that if you don't trust my maths (note that `*` is escaped to avoid your shell running a glob):
 
@@ -65,11 +65,12 @@ And you can compare that if you don't trust my maths (note that `*` is escaped t
 
 There are some test-cases contained in [test.sh](test.sh):
 
-    $ ./test.sh
+    frodo ~/go/src/github.com/skx/math-compiler $ ./test.sh
     Expected output found for '3 4 +' 7
     Expected output found for '3 4 *' 12
     Expected output found for '10 2 -' 8
     Expected output found for '10 2 /' 5
+    Expected output found for '16384 2 *' 32768
 
 
 ## Questions?
