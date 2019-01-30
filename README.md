@@ -3,6 +3,13 @@
 This project contains the simplest possible compiler, which converts simple mathematical operations into assembly language, allowing all the speed in your sums!
 
 
+# Installation
+
+To install this glorious-tool, assuming you have a working golang installation:
+
+    $ go get -u github.com/skx/math-compiler
+
+
 ## Quick Overview
 
 The intention of this project is mostly to say "I wrote a compiler".
@@ -43,7 +50,7 @@ Given this program, saved in the file `test.s`, we can compile, then execute it 
 
 Returning to our previous example of `2 + ( 4 * 54)` we can execute that via:
 
-    $ go run main.go '4 54 * 2+' > sample.s
+    $ math-compiler '4 54 * 2+' > sample.s
     $ gcc -static -o sample ./sample.s
     $ ./sample ; echo $?
     218
