@@ -2,13 +2,9 @@ package main
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
-	"html/template"
-	"io/ioutil"
 	"os"
-	"os/exec"
-	"syscall"
+	"text/template"
 
 	"github.com/skx/math-compiler/lexer"
 	"github.com/skx/math-compiler/token"
@@ -17,15 +13,9 @@ import (
 func main() {
 
 	//
-	// Setup the flags
-	//
-	compile := flag.Bool("compile", false, "Should we compile/execute by default?")
-	flag.Parse()
-
-	//
 	// Ensure we have a single argument
 	//
-	if len(flag.Args()) != 1 {
+	if len(os.Args) != 2 {
 		fmt.Printf("Usage: math-compiler 'expression'\n")
 		os.Exit(1)
 	}
@@ -33,7 +23,7 @@ func main() {
 	//
 	// Create the lexer - based upon our argument
 	//
-	input := flag.Args()[0]
+	input := os.Args[1]
 	lexed := lexer.New(input)
 
 	//
@@ -118,21 +108,21 @@ func main() {
 			// Number already set
 			switch ent.Type {
 			case token.PLUS:
-				operations = append(operations, fmt.Sprintf("add rax, %s", i))
+				operations = append(operations, `add rax, `+i)
 			case token.MINUS:
-				operations = append(operations, fmt.Sprintf("sub rax,%s", i))
+				operations = append(operations, `sub rax,`+i)
 			case token.SLASH:
 				// Look for the division by zero
 				if i == "0" {
-					operations = append(operations, "jmp div_by_zero")
+					operations = append(operations, `jmp div_by_zero`)
 				} else {
-					operations = append(operations, fmt.Sprintf("mov rbx, %s", i))
-					operations = append(operations, "cqo")
-					operations = append(operations, fmt.Sprintf("div rbx"))
+					operations = append(operations, `mov ebx, `+i)
+					operations = append(operations, `cqo`)
+					operations = append(operations, `div ebx`)
 				}
 			case token.ASTERISK:
-				operations = append(operations, fmt.Sprintf("mov rbx, %s", i))
-				operations = append(operations, fmt.Sprintf("mul rbx"))
+				operations = append(operations, `mov ebx, `+i)
+				operations = append(operations, `mul ebx`)
 			default:
 				fmt.Printf("Invalid program - expected operator, got %v\n", ent)
 				os.Exit(1)
@@ -167,20 +157,27 @@ func main() {
 
 .data
 format: .asciz "Division by zero\n"
+result: .asciz "Result %%d\n"
 
 main:
   mov rax, {{.Start}}
 {{range .Operations}}  {{.}}
 {{end}}
+  lea rdi,result
+  mov rsi, rax
+  xor eax, eax
+  xor rax, rax
+  call printf
+  xor eax, eax
   ret
 
 div_by_zero:
-        push rbx
-        lea  rdi,format
-        call printf
-        pop rbx
-        mov rax, 0
-        ret
+  push rbx
+  lea  rdi,format
+  call printf
+  pop rbx
+  mov rax, 0
+  ret
 `
 
 	//
@@ -198,40 +195,5 @@ div_by_zero:
 		os.Exit(1)
 	}
 
-	//
-	// If we're not compiling then just output the assembly
-	//
-	if *compile == false {
-		fmt.Printf(buf.String())
-		os.Exit(0)
-	}
-
-	//
-	// Get a sane value to write to
-	//
-	err = ioutil.WriteFile("tmp.s", buf.Bytes(), 0644)
-	if err != nil {
-		fmt.Printf("Error writing to tmp.s: %s\n", err.Error())
-	}
-
-	//
-	// Now compile
-	//
-	_, err = exec.Command("gcc", "-static", "-o", "tmp.s.exe", "tmp.s").Output()
-
-	//
-	// Finally execute
-	//
-	cmd := exec.Command("tmp.s.exe")
-	var waitStatus syscall.WaitStatus
-	if err := cmd.Run(); err != nil {
-		if exitError, ok := err.(*exec.ExitError); ok {
-			waitStatus = exitError.Sys().(syscall.WaitStatus)
-			fmt.Printf("%s\n", []byte(fmt.Sprintf("%d", waitStatus.ExitStatus())))
-		}
-	} else {
-		// Success
-		waitStatus = cmd.ProcessState.Sys().(syscall.WaitStatus)
-		fmt.Printf("%s\n", []byte(fmt.Sprintf("%d", waitStatus.ExitStatus())))
-	}
+	fmt.Printf(buf.String())
 }

@@ -10,9 +10,9 @@ test_compile() {
 
     go run main.go "${input}" > test.s
     gcc -static -o ./test test.s
-    ./test
+    out=$(./test  | awk '{print $NF}')
 
-    if [ "${result}" = $? ]; then
+    if [ "${result}" = "${out}" ]; then
         echo "Expected output found for '$input' $result "
     else
         echo "Expected output of '$input' is $result - got $?"
@@ -25,3 +25,4 @@ test_compile '3 4 +' 7
 test_compile '3 4 *' 12
 test_compile '10 2 -' 8
 test_compile '10 2 /' 5
+test_compile '16384 2 *' 32768
