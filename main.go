@@ -105,13 +105,16 @@ func main() {
 			// Number already set
 			switch ent.Type {
 			case token.PLUS:
-				operations = append(operations, fmt.Sprintf(" iadd %s", i))
+				operations = append(operations, fmt.Sprintf(" add rax, %s", i))
 			case token.MINUS:
-				operations = append(operations, fmt.Sprintf(" isub %s", i))
+				operations = append(operations, fmt.Sprintf(" sub rax,%s", i))
 			case token.SLASH:
-				operations = append(operations, fmt.Sprintf(" idiv %s", i))
+				operations = append(operations, fmt.Sprintf(" mov rbx, %s", i))
+				operations = append(operations, " cqo")
+				operations = append(operations, fmt.Sprintf(" div rbx"))
 			case token.ASTERISK:
-				operations = append(operations, fmt.Sprintf(" imul %s", i))
+				operations = append(operations, fmt.Sprintf(" mov rbx, %s", i))
+				operations = append(operations, fmt.Sprintf(" mul rbx"))
 			}
 			i = ""
 		}
