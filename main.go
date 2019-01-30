@@ -112,9 +112,14 @@ func main() {
 			case token.MINUS:
 				operations = append(operations, fmt.Sprintf("sub rax,%s", i))
 			case token.SLASH:
-				operations = append(operations, fmt.Sprintf("mov rbx, %s", i))
-				operations = append(operations, "cqo")
-				operations = append(operations, fmt.Sprintf("div rbx"))
+				// Look for the division by zero
+				if i == "0" {
+					operations = append(operations, "jmp div_by_zero")
+				} else {
+					operations = append(operations, fmt.Sprintf("mov rbx, %s", i))
+					operations = append(operations, "cqo")
+					operations = append(operations, fmt.Sprintf("div rbx"))
+				}
 			case token.ASTERISK:
 				operations = append(operations, fmt.Sprintf("mov rbx, %s", i))
 				operations = append(operations, fmt.Sprintf("mul rbx"))
@@ -147,11 +152,22 @@ func main() {
 	assembly := `.intel_syntax noprefix
 .global main
 
+.data
+format: .asciz "Division by zero\n"
+
 main:
   mov rax, {{.Start}}
 {{range .Operations}}  {{.}}
 {{end}}
   ret
+
+div_by_zero:
+        push rbx
+        lea  rdi,format
+        call printf
+        pop rbx
+        mov rax, 0
+        ret
 `
 
 	//
