@@ -41,6 +41,9 @@ func main() {
 	//
 	var program []token.Token
 
+	//
+	// First of all populate that `program` array with our tokens.
+	//
 	for {
 		tok := lexed.NextToken()
 		if tok.Type == token.EOF {
@@ -105,16 +108,16 @@ func main() {
 			// Number already set
 			switch ent.Type {
 			case token.PLUS:
-				operations = append(operations, fmt.Sprintf(" add rax, %s", i))
+				operations = append(operations, fmt.Sprintf("add rax, %s", i))
 			case token.MINUS:
-				operations = append(operations, fmt.Sprintf(" sub rax,%s", i))
+				operations = append(operations, fmt.Sprintf("sub rax,%s", i))
 			case token.SLASH:
-				operations = append(operations, fmt.Sprintf(" mov rbx, %s", i))
-				operations = append(operations, " cqo")
-				operations = append(operations, fmt.Sprintf(" div rbx"))
+				operations = append(operations, fmt.Sprintf("mov rbx, %s", i))
+				operations = append(operations, "cqo")
+				operations = append(operations, fmt.Sprintf("div rbx"))
 			case token.ASTERISK:
-				operations = append(operations, fmt.Sprintf(" mov rbx, %s", i))
-				operations = append(operations, fmt.Sprintf(" mul rbx"))
+				operations = append(operations, fmt.Sprintf("mov rbx, %s", i))
+				operations = append(operations, fmt.Sprintf("mul rbx"))
 			}
 			i = ""
 		}
@@ -123,7 +126,8 @@ func main() {
 	//
 	// Now we have our starting number, and our list of operations
 	//
-	// Create a structure to hold these
+	// Create a structure to hold these such that we can populate
+	// our output-template.
 	//
 	type Assembly struct {
 		Start      string
@@ -131,31 +135,43 @@ func main() {
 	}
 
 	//
-	// Generate the output
+	// Create an instance of the output-structure, and populate it.
 	//
 	var out Assembly
 	out.Start = start
 	out.Operations = operations
 
 	//
-	// Generate the output
+	// This is the template we'll output.
 	//
-	assembly := `
-        .intel_syntax noprefix
-        .global main
-    main:
-        mov rax, {{.Start}}
-{{range .Operations}}
-        {{.}}
+	assembly := `.intel_syntax noprefix
+.global main
+
+main:
+  mov rax, {{.Start}}
+{{range .Operations}}  {{.}}
 {{end}}
-        ret
+  ret
 `
+
+	//
+	// Compile the template.
+	//
 	t := template.Must(template.New("tmpl").Parse(assembly))
+
+	//
+	// And now execute it, into a buffer.
+	//
 	buf := &bytes.Buffer{}
 	err := t.Execute(buf, out)
-	if err != nil {
-		fmt.Printf("Error formatting template: %s\n", err.Error())
+
+	//
+	// If there are no errors then write it to the console
+	//
+	if err == nil {
+		fmt.Printf(buf.String())
+	} else {
+		fmt.Printf("Error compiling template: %s\n", err.Error())
 	}
-	fmt.Printf(buf.String())
 
 }
