@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"html/template"
 	"os"
 
 	"github.com/skx/math-compiler/lexer"
@@ -63,14 +65,94 @@ func main() {
 	// Pop off the starting integer.
 	//
 	start := program[0].Literal
-	fmt.Printf("Starting with %s\n", start)
 
 	//
-	// Now process the rest of the program pair-wise
+	// Now process the rest of the program pair-wise - removing that
+	// first number.
 	//
 	program = program[1:]
 
+	//
+	// We expect to work in pairs; reading two elements from
+	// our program.
+	//
+	// For example with the program:
+	//
+	//  3 4 + 5 * 2 /
+	//
+	// We've already removed the leading "3" so now we expect
+	//
+	//  4 +
+	//  5 *
+	//  2 /
+	//
+	// i.e. Number, operator
+	//
+	// We'll populate an array of the operations we emit
+	// to assembly language.
+	//
+	var operations []string
+
+	var i string
+
 	for _, ent := range program {
-		fmt.Printf("%v\n", ent)
+
+		if i == "" {
+			// number
+			i = ent.Literal
+		} else {
+
+			// Number already set
+			switch ent.Type {
+			case token.PLUS:
+				operations = append(operations, fmt.Sprintf(" iadd %s", i))
+			case token.MINUS:
+				operations = append(operations, fmt.Sprintf(" isub %s", i))
+			case token.SLASH:
+				operations = append(operations, fmt.Sprintf(" idiv %s", i))
+			case token.ASTERISK:
+				operations = append(operations, fmt.Sprintf(" imul %s", i))
+			}
+			i = ""
+		}
 	}
+
+	//
+	// Now we have our starting number, and our list of operations
+	//
+	// Create a structure to hold these
+	//
+	type Assembly struct {
+		Start      string
+		Operations []string
+	}
+
+	//
+	// Generate the output
+	//
+	var out Assembly
+	out.Start = start
+	out.Operations = operations
+
+	//
+	// Generate the output
+	//
+	assembly := `
+        .intel_syntax noprefix
+        .global main
+    main:
+        mov rax, {{.Start}}
+{{range .Operations}}
+        {{.}}
+{{end}}
+        ret
+`
+	t := template.Must(template.New("tmpl").Parse(assembly))
+	buf := &bytes.Buffer{}
+	err := t.Execute(buf, out)
+	if err != nil {
+		fmt.Printf("Error formatting template: %s\n", err.Error())
+	}
+	fmt.Printf(buf.String())
+
 }
