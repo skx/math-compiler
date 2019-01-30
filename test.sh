@@ -13,9 +13,9 @@ test_compile() {
     out=$(./test  | awk '{print $NF}')
 
     if [ "${result}" = "${out}" ]; then
-        echo "Expected output found for '$input' $result "
+        echo "Expected output found for '$input' [$result] "
     else
-        echo "Expected output of '$input' is $result - got $?"
+        echo "Expected output of '$input' is '$result' - got '${out}' instead"
     fi
 
 }
@@ -25,4 +25,10 @@ test_compile '3 4 +' 7
 test_compile '3 4 *' 12
 test_compile '10 2 -' 8
 test_compile '10 2 /' 5
-test_compile '16384 2 *' 32768
+test_compile '16384 2 * ' 32768
+test_compile '16384 2 * 2 *' 65536
+test_compile '16384 2 / 2 /' 4096
+
+# We're operating on integers...
+test_compile '3 2 /' 1
+test_compile '5 2 /' 2
