@@ -2,9 +2,13 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"os"
+	"os/exec"
+	"syscall"
 
 	"github.com/skx/math-compiler/lexer"
 	"github.com/skx/math-compiler/token"
@@ -13,9 +17,15 @@ import (
 func main() {
 
 	//
+	// Setup the flags
+	//
+	compile := flag.Bool("compile", false, "Should we compile/execute by default?")
+	flag.Parse()
+
+	//
 	// Ensure we have a single argument
 	//
-	if len(os.Args) != 2 {
+	if len(flag.Args()) != 1 {
 		fmt.Printf("Usage: math-compiler 'expression'\n")
 		os.Exit(1)
 	}
@@ -23,7 +33,7 @@ func main() {
 	//
 	// Create the lexer - based upon our argument
 	//
-	input := os.Args[1]
+	input := flag.Args()[0]
 	lexed := lexer.New(input)
 
 	//
@@ -180,14 +190,45 @@ div_by_zero:
 	//
 	buf := &bytes.Buffer{}
 	err := t.Execute(buf, out)
-
-	//
-	// If there are no errors then write it to the console
-	//
-	if err == nil {
-		fmt.Printf(buf.String())
-	} else {
+	if err != nil {
 		fmt.Printf("Error compiling template: %s\n", err.Error())
+		os.Exit(1)
 	}
 
+	//
+	// If we're not compiling then just output the assembly
+	//
+	if *compile == false {
+		fmt.Printf(buf.String())
+		os.Exit(0)
+	}
+
+	//
+	// Get a sane value to write to
+	//
+	err = ioutil.WriteFile("tmp.s", buf.Bytes(), 0644)
+	if err != nil {
+		fmt.Printf("Error writing to tmp.s: %s\n", err.Error())
+	}
+
+	//
+	// Now compile
+	//
+	_, err = exec.Command("gcc", "-static", "-o", "tmp.s.exe", "tmp.s").Output()
+
+	//
+	// Finally execute
+	//
+	cmd := exec.Command("tmp.s.exe")
+	var waitStatus syscall.WaitStatus
+	if err := cmd.Run(); err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			waitStatus = exitError.Sys().(syscall.WaitStatus)
+			fmt.Printf("%s\n", []byte(fmt.Sprintf("%d", waitStatus.ExitStatus())))
+		}
+	} else {
+		// Success
+		waitStatus = cmd.ProcessState.Sys().(syscall.WaitStatus)
+		fmt.Printf("%s\n", []byte(fmt.Sprintf("%d", waitStatus.ExitStatus())))
+	}
 }

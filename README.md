@@ -60,6 +60,10 @@ And you can compare that if you don't trust my maths (note that `*` is escaped t
     $ expr 4 \* 54 + 2
     218
 
+If you prefer to avoid compiling the output yourself you can do it directly, via the `-compile=true` argument:
+
+    $ math-compiler -compile=true '3 34 + 3 *'
+    111
 
 ## Test Cases
 
