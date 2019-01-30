@@ -14,6 +14,7 @@ test_compile() {
 
     if [ "${result}" = "${out}" ]; then
         echo "Expected output found for '$input' [$result] "
+        rm test test.s
     else
         echo "Expected output of '$input' is '$result' - got '${out}' instead"
     fi
