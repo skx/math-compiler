@@ -54,6 +54,17 @@ And you can compare that if you don't trust my maths (note that `*` is escaped t
     218
 
 
+## Test Cases
+
+There are some test-cases contained in [test.sh](test.sh):
+
+    $ ./test.sh
+    Expected output found for '3 4 +' 7
+    Expected output found for '3 4 *' 12
+    Expected output found for '10 2 -' 8
+    Expected output found for '10 2 /' 5
+
+
 ## Questions?
 
 Great.  That concludes our exploration of compilers.
