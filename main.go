@@ -133,6 +133,9 @@ func main() {
 			case token.ASTERISK:
 				operations = append(operations, fmt.Sprintf("mov rbx, %s", i))
 				operations = append(operations, fmt.Sprintf("mul rbx"))
+			default:
+				fmt.Printf("Invalid program - expected operator, got %v\n", ent)
+				os.Exit(1)
 			}
 			i = ""
 		}
