@@ -63,6 +63,14 @@ And you can compare that if you don't trust my maths (note that `*` is escaped t
     $ expr 4 \* 54 + 2
     218
 
+If you wish you can "simplify" the compilation step by piping the output directly to `gcc`, you'll need to add `-x assembler` because the filename-suffix will no longer be available to allow language-detection.
+
+Here is an example:
+
+    $ ./math-compiler '6 6 * 12 /' | gcc -static -o prog  -x assembler - ; ./prog
+    Result 3
+
+
 
 ## Test Cases
 
