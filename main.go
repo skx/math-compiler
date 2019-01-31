@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"text/template"
 
 	"github.com/skx/math-compiler/lexer"
@@ -13,9 +15,15 @@ import (
 func main() {
 
 	//
+	// Look for flags.
+	//
+	compile := flag.Bool("compile", false, "Compile the program, to a.out")
+	flag.Parse()
+
+	//
 	// Ensure we have a single argument
 	//
-	if len(os.Args) != 2 {
+	if len(flag.Args()) != 1 {
 		fmt.Printf("Usage: math-compiler 'expression'\n")
 		os.Exit(1)
 	}
@@ -23,7 +31,7 @@ func main() {
 	//
 	// Create the lexer - based upon our argument
 	//
-	input := os.Args[1]
+	input := flag.Args()[0]
 	lexed := lexer.New(input)
 
 	//
@@ -225,7 +233,7 @@ func main() {
 
 .data
 format: .asciz "Division by zero\n"
-result: .asciz "Result %%d\n"
+result: .asciz "Result %d\n"
 
 main:
  mov rax, {{.Start}}
@@ -265,5 +273,20 @@ div_by_zero:
 	//
 	// Finally show that to STDOUT
 	//
-	fmt.Printf(buf.String())
+	if *compile == false {
+
+		fmt.Printf("%s", buf.String())
+	} else {
+		gcc := exec.Command("gcc", "-static", "-o", "a.out", "-x", "assembler", "-")
+		gcc.Stdout = os.Stdout
+		gcc.Stdin = buf
+		gcc.Stderr = os.Stderr
+
+		err := gcc.Run()
+		if err != nil {
+			fmt.Printf("Error launching gcc: %s\n", err)
+			os.Exit(1)
+		}
+
+	}
 }

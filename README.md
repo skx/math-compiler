@@ -83,7 +83,11 @@ Here is an example:
     $ ./math-compiler '6 6 * 12 /' | gcc -static -o prog  -x assembler - ; ./prog
     Result 3
 
+Or failing that you can allow the `math-compiler` to generate an executable for you:
 
+    $ ./math-compiler -compile=true '2 8 ^'
+    $ ./a.out
+    Result 256
 
 ## Test Cases
 
