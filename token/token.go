@@ -17,4 +17,5 @@ const (
 	MINUS    = "-"
 	ASTERISK = "*"
 	SLASH    = "/"
+	MOD      = "%"
 )
