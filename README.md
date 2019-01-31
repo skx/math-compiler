@@ -3,6 +3,7 @@
 This project contains the simplest possible compiler, which converts simple mathematical operations into assembly language, allowing all the speed in your sums!
 
 
+
 # Installation
 
 To install this glorious-tool, assuming you have a working [golang](https://golang.org/) installation:
@@ -10,9 +11,10 @@ To install this glorious-tool, assuming you have a working [golang](https://gola
     $ go get -u github.com/skx/math-compiler
 
 
+
 ## Quick Overview
 
-The intention of this project is mostly to say "I wrote a compiler", because I've already [experimented with a language](https://github.com/skx/monkey/), and [implemented a BASIC](https://github.com/skx/gobasic/).  The things learned from this were pretty useful, even if the end-results were not so obviously useful.
+The intention of this project is mostly to say "I wrote a compiler", because I've already [experimented with a language](https://github.com/skx/monkey/), and [implemented a BASIC](https://github.com/skx/gobasic/).  The things learned from those projects were pretty useful, even if the actual results were not so obviously useful in themselves.
 
 Because there are no shortages of toy-languages, and there is a lot of complexity in writing another for no real gain, I decided to just focus upon a simple core:
 
@@ -46,33 +48,13 @@ We support the following operations:
 * `%` - Modulus
   * `7 % 5` is expressed `7 5 %`
 
-Hopefully you can see how those are chained, so the sum `(3 + (5 * 5)) / 2` would be written like this
-
-    $ math-compiler -compile "5 5 * 3 + 2 /"
-    $ ./a.out
-    Result 14
+Hopefully you can see how those are chained, so the sum `(3 + (5 * 5)) / 2` would be written as `5 5 * 3 + 2 /`.
 
 
 
 ## About Our Output
 
-The output of this program will typically be an assembly-language file, which then needs to be compiled and executed.  For example here is the simplest possible program:
-
-    .intel_syntax noprefix
-    .global main
-    main:
-        mov rax, 32
-        ret
-
-Given this program, saved in the file `test.s`, we can compile, then execute it like so:
-
-     $ gcc -static -o test ./test.s
-     $ ./test ; echo $?
-     32
-
-
-
-## Real Usage
+The output of `math-compiler` will typically be an assembly-language file, which then needs to be compiled before it may be executed.
 
 Returning to our previous example of `2 + ( 4 * 54)` we can compile & execute that program like so:
 
@@ -81,11 +63,18 @@ Returning to our previous example of `2 + ( 4 * 54)` we can compile & execute th
     $ ./sample
     Result 218
 
-If you wish you can also let the compiler do the heavy-lifting, and generate an executable for you directly.  Simply add `-compile`, and execute the generated `a.out` binary:
+There you see:
+
+* `math-compiler` was invoked, and the output written to the file `sample.s`.
+* `gcc` was used to assemble the result.
+* The actual binary was then executed, and that showed the result.
+
+If you prefer you can also let the compiler do the heavy-lifting, and generate an executable for you directly.  Simply add `-compile`, and execute the generated `a.out` binary:
 
     $ math-compiler -compile=true '2 8 ^'
     $ a.out
     Result 256
+
 
 
 ## Test Cases
@@ -106,6 +95,7 @@ There are some test-cases contained in [test.sh](test.sh):
 
 
 
+
 ## Numerical Limits
 
 I try to use full-width instructions where possible.
@@ -122,9 +112,12 @@ As you can see the registers can store a different number of bits, depending on 
 I believe that means we should be OK to store 64-bit numbers.
 
 
+
 ## Questions?
 
 Great.  That concludes our exploration of compilers.
+
+
 
 Steve
 --
