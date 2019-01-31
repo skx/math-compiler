@@ -29,6 +29,19 @@ However I've even simplified that, via the use of a "[Reverse Polish](https://en
 (In our case we have no stack, so we just assume "operand ... operand operator", constantly.)
 
 
+## Supported Operations
+
+We support the following operations:
+
+* `+` - Plus
+* `-` - Minus
+* `*` - Multiply
+* `/` - Divide
+* `^` - Raise to a power
+* `%` - Modulus
+
+
+
 ## About Our Output
 
 The output of this program will be an assembly-language file, which can be compiled and executed.
@@ -77,11 +90,17 @@ Here is an example:
 There are some test-cases contained in [test.sh](test.sh):
 
     frodo ~/go/src/github.com/skx/math-compiler $ ./test.sh
-    Expected output found for '3 4 +' 7
-    Expected output found for '3 4 *' 12
-    Expected output found for '10 2 -' 8
-    Expected output found for '10 2 /' 5
-    Expected output found for '16384 2 *' 32768
+    ...
+    Expected output found for '2 0 ^' [0]
+    Expected output found for '2 1 ^' [2]
+    Expected output found for '2 2 ^' [4]
+    Expected output found for '2 3 ^' [8]
+    Expected output found for '2 4 ^' [16]
+    Expected output found for '2 5 ^' [32]
+    ...
+    Expected output found for '2 30 ^' [1073741824]
+    ...
+
 
 
 ## Numerical Limits
