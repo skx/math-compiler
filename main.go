@@ -94,6 +94,8 @@ func main() {
 	// We'll populate an array of the operations we emit
 	// to assembly language.
 	//
+	// TODO: We could abort here if the length of `program` was not even.
+	//
 	var operations []string
 
 	var i string
@@ -105,12 +107,32 @@ func main() {
 			i = ent.Literal
 		} else {
 
-			// Number already set
+			//
+			// The number is already set, so we're now expecting
+			// an operator.
+			//
+			//
 			switch ent.Type {
+
 			case token.PLUS:
 				operations = append(operations, `add rax, `+i)
+
+			case token.MOD:
+				//
+				// Modulus is a cheat - div/idiv will handle
+				// setting the remainder in `edx`.  But you
+				// need to clear it first to avoid bogus
+				// values.
+				//
+				operations = append(operations, `xor rdx, rdx`)
+				operations = append(operations, `mov rax, `+i)
+				operations = append(operations, `cqo`)
+				operations = append(operations, `div rbx`)
+				operations = append(operations, `mov eax, edx`)
+
 			case token.MINUS:
 				operations = append(operations, `sub rax,`+i)
+
 			case token.SLASH:
 				// Look for the division by zero
 				if i == "0" {
@@ -120,13 +142,20 @@ func main() {
 					operations = append(operations, `cqo`)
 					operations = append(operations, `div ebx`)
 				}
+
 			case token.ASTERISK:
 				operations = append(operations, `mov ebx, `+i)
 				operations = append(operations, `mul ebx`)
+
 			default:
-				fmt.Printf("Invalid program - expected operator, got %v\n", ent)
+				fmt.Printf("Invalid program - expected operator, but found %v\n", ent)
 				os.Exit(1)
 			}
+
+			//
+			// Next time around the loop we'll be looking for
+			// a number, rather than an operator.
+			//
 			i = ""
 		}
 	}
@@ -146,7 +175,15 @@ func main() {
 	// Create an instance of the output-structure, and populate it.
 	//
 	var out Assembly
+
+	//
+	// Starting value.
+	//
 	out.Start = start
+
+	//
+	// Assembly-language operations
+	//
 	out.Operations = operations
 
 	//
@@ -165,10 +202,9 @@ main:
 {{end}}
   lea rdi,result
   mov rsi, rax
-  xor eax, eax
   xor rax, rax
   call printf
-  xor eax, eax
+  xor rax, rax
   ret
 
 div_by_zero:
@@ -195,5 +231,8 @@ div_by_zero:
 		os.Exit(1)
 	}
 
+	//
+	// Finally show that to STDOUT
+	//
 	fmt.Printf(buf.String())
 }
