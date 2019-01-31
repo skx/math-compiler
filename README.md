@@ -66,7 +66,7 @@ Returning to our previous example of `2 + ( 4 * 54)` we can compile & execute th
 There you see:
 
 * `math-compiler` was invoked, and the output written to the file `sample.s`.
-* `gcc` was used to assemble the result.
+* `gcc` was used to assemble `sample.s` into the binary `sample`.
 * The actual binary was then executed, and that showed the result.
 
 If you prefer you can also let the compiler do the heavy-lifting, and generate an executable for you directly.  Simply add `-compile`, and execute the generated `a.out` binary:
