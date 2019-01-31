@@ -84,6 +84,22 @@ There are some test-cases contained in [test.sh](test.sh):
     Expected output found for '16384 2 *' 32768
 
 
+## Numerical Limits
+
+I try to use full-width instructions where possible.
+
+As ou can see the intel registers can store a different number of bits:
+
+     0x1122334455667788
+     ================ rax (64 bits)
+             ======== eax (32 bits)
+                 ====  ax (16 bits)
+                   ==    ah (8 bits)
+                   ==  al (8 bits)
+
+I believe that means we should be OK to store 64-bit numbers.
+
+
 ## Questions?
 
 Great.  That concludes our exploration of compilers.
