@@ -14,15 +14,15 @@ To install this glorious-tool, assuming you have a working [golang](https://gola
 
 The intention of this project is mostly to say "I wrote a compiler", because I've already [experimented with a language](https://github.com/skx/monkey/), and [implemented a BASIC](https://github.com/skx/gobasic/).  The things learned from this were pretty useful, even if the end-results were not so obviously useful.
 
-Because there are no shortages of toy-languages, and there is a lot of complexity in writing another for no real gain I decided to just focus upon the core:
+Because there are no shortages of toy-languages, and there is a lot of complexity in writing another for no real gain, I decided to just focus upon a simple core:
 
-* Allowing "maths" things to be "compiled".
+* Allowing "maths stuff" to be "compiled".
 
 In theory this would allow me to compile things like this:
 
     2 + ( 4 * 54 )
 
-However I've even simplified that, via the use of a "[Reverse Polish](https://en.wikipedia.org/wiki/Reverse_Polish_notation)"-like notation.  So if you want to run that example you'd enter the expression as:
+However I even simplified that, via the use of a "[Reverse Polish](https://en.wikipedia.org/wiki/Reverse_Polish_notation)"-like notation, so if you want to run that example you'd enter the expression as:
 
     4 54 * 2 +
 
@@ -34,19 +34,29 @@ However I've even simplified that, via the use of a "[Reverse Polish](https://en
 We support the following operations:
 
 * `+` - Plus
+  * `1 + 2` is expressed `1 2 +`
 * `-` - Minus
+  * `4 - 2` is expressed `4 2 -`
 * `*` - Multiply
+  * `4 * 4` is expressed `4 4 *`
 * `/` - Divide
+  * `40 / 10` is expressed `40 10 /`
 * `^` - Raise to a power
+  * `2 ^ 4` is expressed `2 4 ^`
 * `%` - Modulus
+  * `7 % 5` is expressed `7 5 %`
+
+Hopefully you can see how those are chained, so the sum `(3 + (5 * 5)) / 2` would be written like this
+
+    $ math-compiler -compile "5 5 * 3 + 2 /"
+    $ ./a.out
+    Result 14
 
 
 
 ## About Our Output
 
-The output of this program will be an assembly-language file, which can be compiled and executed.
-
-For example here is the simplest possible program:
+The output of this program will typically be an assembly-language file, which then needs to be compiled and executed.  For example here is the simplest possible program:
 
     .intel_syntax noprefix
     .global main
@@ -64,30 +74,19 @@ Given this program, saved in the file `test.s`, we can compile, then execute it 
 
 ## Real Usage
 
-Returning to our previous example of `2 + ( 4 * 54)` we can execute that via:
+Returning to our previous example of `2 + ( 4 * 54)` we can compile & execute that program like so:
 
     $ math-compiler '4 54 * 2+' > sample.s
     $ gcc -static -o sample ./sample.s
     $ ./sample
     Result 218
 
-And you can compare that if you don't trust my maths (note that `*` is escaped to avoid your shell running a glob):
+If you wish you can also let the compiler do the heavy-lifting, and generate an executable for you directly.  Simply add `-compile`, and execute the generated `a.out` binary:
 
-    $ expr 4 \* 54 + 2
-    218
-
-If you wish you can "simplify" the compilation step by piping the output directly to `gcc`, you'll need to add `-x assembler` because the filename-suffix will no longer be available to allow language-detection.
-
-Here is an example:
-
-    $ ./math-compiler '6 6 * 12 /' | gcc -static -o prog  -x assembler - ; ./prog
-    Result 3
-
-Or failing that you can allow the `math-compiler` to generate an executable for you:
-
-    $ ./math-compiler -compile=true '2 8 ^'
-    $ ./a.out
+    $ math-compiler -compile=true '2 8 ^'
+    $ a.out
     Result 256
+
 
 ## Test Cases
 
@@ -111,13 +110,13 @@ There are some test-cases contained in [test.sh](test.sh):
 
 I try to use full-width instructions where possible.
 
-As ou can see the intel registers can store a different number of bits:
+As you can see the registers can store a different number of bits, depending on how much you access:
 
      0x1122334455667788
      ================ rax (64 bits)
              ======== eax (32 bits)
                  ====  ax (16 bits)
-                   ==    ah (8 bits)
+                   ==  ah (8 bits)
                    ==  al (8 bits)
 
 I believe that means we should be OK to store 64-bit numbers.
