@@ -100,7 +100,7 @@ func main() {
 
 	var i string
 
-	for _, ent := range program {
+	for offset, ent := range program {
 
 		if i == "" {
 			// number
@@ -133,8 +133,39 @@ func main() {
 			case token.MINUS:
 				operations = append(operations, `sub rax,`+i)
 
+			case token.POWER:
+
+				//
+				// N ^ 0 -> 0
+				// N ^ 1 -> N
+				// N ^ 2 -> N * N
+				// N ^ 3 -> N * N * N
+				// ..
+				//
+				switch i {
+				case "0":
+					operations = append(operations, `xor rax, rax`)
+				case "1":
+					// nop
+				default:
+					//
+					// We'll want to output a loop which
+					// means we need a uniq label
+					//
+					// We generate the label ID as the offset of
+					// the statement we're generating in our input
+					//
+					operations = append(operations, `mov rcx, `+i)
+					operations = append(operations, `mov ebx, eax`)
+					operations = append(operations, `dec rcx`)
+					operations = append(operations, fmt.Sprintf("label_%d:", offset))
+					operations = append(operations, `  mul ebx`)
+					operations = append(operations, `  dec rcx`)
+					operations = append(operations, fmt.Sprintf("  jnz label_%d", offset))
+				}
 			case token.SLASH:
-				// Look for the division by zero
+				// Handle a division by zero at run-time.
+				// We could catch it at generation-time, just as well..
 				if i == "0" {
 					operations = append(operations, `jmp div_by_zero`)
 				} else {
@@ -197,23 +228,23 @@ format: .asciz "Division by zero\n"
 result: .asciz "Result %%d\n"
 
 main:
-  mov rax, {{.Start}}
-{{range .Operations}}  {{.}}
+ mov rax, {{.Start}}
+{{range .Operations}} {{.}}
 {{end}}
-  lea rdi,result
-  mov rsi, rax
-  xor rax, rax
-  call printf
-  xor rax, rax
-  ret
+ lea rdi,result
+ mov rsi, rax
+ xor rax, rax
+ call printf
+ xor rax, rax
+ ret
 
 div_by_zero:
-  push rbx
-  lea  rdi,format
-  call printf
-  pop rbx
-  mov rax, 0
-  ret
+ push rbx
+ lea  rdi,format
+ call printf
+ pop rbx
+ mov rax, 0
+ ret
 `
 
 	//

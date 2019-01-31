@@ -18,4 +18,5 @@ const (
 	ASTERISK = "*"
 	SLASH    = "/"
 	MOD      = "%"
+	POWER    = "^"
 )
