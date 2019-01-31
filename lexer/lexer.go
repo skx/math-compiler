@@ -40,6 +40,8 @@ func (l *Lexer) NextToken() token.Token {
 	switch l.ch {
 	case rune('+'):
 		tok = newToken(token.PLUS, l.ch)
+	case rune('%'):
+		tok = newToken(token.MOD, l.ch)
 	case rune('-'):
 		// -3 is "-3".  "3 - 4" is -1.
 		if isDigit(l.peekChar()) {
