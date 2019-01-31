@@ -5,14 +5,14 @@ This project contains the simplest possible compiler, which converts simple math
 
 # Installation
 
-To install this glorious-tool, assuming you have a working golang installation:
+To install this glorious-tool, assuming you have a working [golang](https://golang.org/) installation:
 
     $ go get -u github.com/skx/math-compiler
 
 
 ## Quick Overview
 
-The intention of this project is mostly to say "I wrote a compiler".
+The intention of this project is mostly to say "I wrote a compiler", because I've already [experimented with a language](https://github.com/skx/monkey/), and [implemented a BASIC](https://github.com/skx/gobasic/).  The things learned from this were pretty useful, even if the end-results were not so obviously useful.
 
 Because there are no shortages of toy-languages, and there is a lot of complexity in writing another for no real gain I decided to just focus upon the core:
 
@@ -22,9 +22,12 @@ In theory this would allow me to compile things like this:
 
     2 + ( 4 * 54 )
 
-However I've even simplified that, via the use of reverse-polish notation.  So if you want to run that example you'd enter the expression as:
+However I've even simplified that, via the use of a "[Reverse Polish](https://en.wikipedia.org/wiki/Reverse_Polish_notation)"-like notation.  So if you want to run that example you'd enter the expression as:
 
     4 54 * 2 +
+
+(In our case we have no stack, so we just assume "operand ... operand operator", constantly.)
+
 
 ## About Our Output
 
