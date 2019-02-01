@@ -34,7 +34,7 @@ func TestParseNumbers(t *testing.T) {
 
 // Trivial test of the parsing of operators.
 func TestParseOperators(t *testing.T) {
-	input := `+ - * / % ^`
+	input := `+ - * / % ^ -`
 
 	tests := []struct {
 		expectedType    token.TokenType
@@ -46,6 +46,7 @@ func TestParseOperators(t *testing.T) {
 		{token.SLASH, "/"},
 		{token.MOD, "%"},
 		{token.POWER, "^"},
+		{token.MINUS, "-"},
 		{token.EOF, ""},
 	}
 	l := New(input)
