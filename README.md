@@ -79,7 +79,16 @@ If you prefer you can also let the compiler do the heavy-lifting, and generate a
 
 ## Test Cases
 
-There are some test-cases contained in [test.sh](test.sh):
+The codebase itself contains some simple test-cases, however these are
+not comprehensive.
+
+To execute the tests use the standard approach:
+
+    $ go test [-race] ./...
+
+In addition to the internal test cases there are also some functional tests
+contained in [test.sh](test.sh) - these perform some calculations and verify
+they produce the correct result.
 
     frodo ~/go/src/github.com/skx/math-compiler $ ./test.sh
     ...
