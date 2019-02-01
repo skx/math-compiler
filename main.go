@@ -18,8 +18,17 @@ func main() {
 	//
 	// Look for flags.
 	//
-	compile := flag.Bool("compile", false, "Compile the program, to a.out")
+	compile := flag.Bool("compile", false, "Compile the program, via invoking gcc.")
+	program := flag.String("filename", "a.out", "The program to write to.")
+	run := flag.Bool("run", false, "Run the binary, post-compile.")
 	flag.Parse()
+
+	//
+	// If we're running we're also compiling
+	//
+	if *run == true {
+		*compile = true
+	}
 
 	//
 	// Ensure we have an expression as our single argument.
@@ -37,7 +46,8 @@ func main() {
 	//
 	// Parse the program into a series of statements, etc.
 	//
-	// At this point there might be errors.  If so report that.
+	// At this point there might be errors.  If so report them,
+	// and terminate.
 	//
 	err := comp.Compile()
 	if err != nil {
@@ -66,27 +76,40 @@ func main() {
 	}
 
 	//
-	// OK we're compiling the program directly into the file
-	// `a.out`.
+	// OK we're compiling the program, via gcc.
 	//
-	// Do that by invoking gcc.
-	//
-	bin := "a.out"
-	gcc := exec.Command("gcc", "-static", "-o", bin, "-x", "assembler", "-")
+	gcc := exec.Command("gcc", "-static", "-o", *program, "-x", "assembler", "-")
 	gcc.Stdout = os.Stdout
 	gcc.Stderr = os.Stderr
 
 	//
-	// We'll pipe our generated-program to STDIN of gcc, via an
-	// interim-buffer object.
+	// We'll pipe our generated-program to STDIN of gcc, via a
+	// temporary buffer-object.
 	//
 	var b bytes.Buffer
 	b.Write([]byte(out))
 	gcc.Stdin = &b
 
+	//
+	// Run gcc.
+	//
 	err = gcc.Run()
 	if err != nil {
 		fmt.Printf("Error launching gcc: %s\n", err)
 		os.Exit(1)
+	}
+
+	//
+	// Running the binary too?
+	//
+	if *run == true {
+		exe := exec.Command(*program)
+		exe.Stdout = os.Stdout
+		exe.Stderr = os.Stderr
+		err = exe.Run()
+		if err != nil {
+			fmt.Printf("Error launching %s: %s\n", *program, err)
+			os.Exit(1)
+		}
 	}
 }
