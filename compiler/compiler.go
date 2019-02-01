@@ -117,96 +117,111 @@ func (c *Compiler) Output() (string, error) {
 	//
 	var operations []string
 
+	//
+	// Temporary-storage for the number we're operating upon next.
+	//
 	var i string
 
+	//
+	// Walk over the array of tokens - skipping the first one,
+	// which is our initial value.
+	//
 	for offset, ent := range c.tokens[1:] {
 
+		//
+		// If we have no number then save it.
+		//
 		if i == "" {
 			// number
 			i = ent.Literal
-		} else {
+			continue
+		}
+
+		//
+		// The number is already set, so we're now expecting
+		// an operator which will be applied to it.
+		//
+		switch ent.Type {
+
+		case token.PLUS:
+			operations = append(operations, `add rax, `+i)
+
+		case token.MOD:
 
 			//
-			// The number is already set, so we're now expecting
-			// an operator.
+			// Modulus is a cheat - div/idiv will handle
+			// setting the remainder in `edx`.  But you
+			// need to clear it first to avoid bogus
+			// values.
 			//
+			operations = append(operations, `xor rdx, rdx`)
+			operations = append(operations, `mov rax, `+i)
+			operations = append(operations, `cqo`)
+			operations = append(operations, `div rbx`)
+			operations = append(operations, `mov eax, edx`)
+
+		case token.MINUS:
+			operations = append(operations, `sub rax,`+i)
+
+		case token.POWER:
+
 			//
-			switch ent.Type {
-
-			case token.PLUS:
-				operations = append(operations, `add rax, `+i)
-
-			case token.MOD:
-				//
-				// Modulus is a cheat - div/idiv will handle
-				// setting the remainder in `edx`.  But you
-				// need to clear it first to avoid bogus
-				// values.
-				//
-				operations = append(operations, `xor rdx, rdx`)
-				operations = append(operations, `mov rax, `+i)
-				operations = append(operations, `cqo`)
-				operations = append(operations, `div rbx`)
-				operations = append(operations, `mov eax, edx`)
-
-			case token.MINUS:
-				operations = append(operations, `sub rax,`+i)
-
-			case token.POWER:
-
-				//
-				// N ^ 0 -> 0
-				// N ^ 1 -> N
-				// N ^ 2 -> N * N
-				// N ^ 3 -> N * N * N
-				// ..
-				//
-				switch i {
-				case "0":
-					operations = append(operations, `xor rax, rax`)
-				case "1":
-					// nop
-				default:
-					//
-					// We'll want to output a loop which
-					// means we need a uniq label
-					//
-					// We generate the label ID as the offset of
-					// the statement we're generating in our input
-					//
-					operations = append(operations, `mov rcx, `+i)
-					operations = append(operations, `mov ebx, eax`)
-					operations = append(operations, `dec rcx`)
-					operations = append(operations, fmt.Sprintf("label_%d:", offset))
-					operations = append(operations, `  mul ebx`)
-					operations = append(operations, `  dec rcx`)
-					operations = append(operations, fmt.Sprintf("  jnz label_%d", offset))
-				}
-			case token.SLASH:
-				// Handle a division by zero at run-time.
-				// We could catch it at generation-time, just as well..
-				if i == "0" {
-					operations = append(operations, `jmp div_by_zero`)
-				} else {
-					operations = append(operations, `mov ebx, `+i)
-					operations = append(operations, `cqo`)
-					operations = append(operations, `div ebx`)
-				}
-
-			case token.ASTERISK:
-				operations = append(operations, `mov ebx, `+i)
-				operations = append(operations, `mul ebx`)
-
+			// N ^ 0 -> 0
+			// N ^ 1 -> N
+			// N ^ 2 -> N * N
+			// N ^ 3 -> N * N * N
+			// ..
+			//
+			switch i {
+			case "0":
+				operations = append(operations, `xor rax, rax`)
+			case "1":
+				// nop
 			default:
-				return "", fmt.Errorf("Invalid program - expected operator, but found %v\n", ent)
+				//
+				// We'll want to output a loop which
+				// means we need a unique label
+				//
+				// We generate the label ID as the offset of
+				// the statement we're generating in our input
+				//
+				label := fmt.Sprintf("label_%d", offset)
+
+				//
+				// Output the loop to calculate the power.
+				//
+				operations = append(operations, `mov rcx, `+i)
+				operations = append(operations, `mov ebx, eax`)
+				operations = append(operations, `dec rcx`)
+				operations = append(operations, label+":")
+				operations = append(operations, `  mul ebx`)
+				operations = append(operations, `  dec rcx`)
+				operations = append(operations, `  jnz `+label)
+			}
+		case token.SLASH:
+			// Handle a division by zero at run-time.
+			// We could catch it at generation-time, just as well..
+			if i == "0" {
+				operations = append(operations, `jmp div_by_zero`)
+			} else {
+				operations = append(operations, `mov ebx, `+i)
+				operations = append(operations, `cqo`)
+				operations = append(operations, `div ebx`)
 			}
 
-			//
-			// Next time around the loop we'll be looking for
-			// a number, rather than an operator.
-			//
-			i = ""
+		case token.ASTERISK:
+			operations = append(operations, `mov ebx, `+i)
+			operations = append(operations, `mul ebx`)
+
+		default:
+			return "", fmt.Errorf("Invalid program - expected operator, but found %v\n", ent)
 		}
+
+		//
+		// Next time around the loop we'll be looking for
+		// a number, rather than an operator.
+		//
+		i = ""
 	}
 
 	//
