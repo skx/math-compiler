@@ -56,7 +56,7 @@ Hopefully you can see how those are chained, so the sum `(3 + (5 * 5)) / 2` woul
 
 The output of `math-compiler` will typically be an assembly-language file, which then needs to be compiled before it may be executed.
 
-Returning to our previous example of `2 + ( 4 * 54)` we can compile & execute that program like so:
+Given our previous example of `2 + ( 4 * 54)` we can compile & execute that program like so:
 
     $ math-compiler '4 54 * 2+' > sample.s
     $ gcc -static -o sample ./sample.s
@@ -67,7 +67,7 @@ There you see:
 
 * `math-compiler` was invoked, and the output written to the file `sample.s`.
 * `gcc` was used to assemble `sample.s` into the binary `sample`.
-* The actual binary was then executed, and that showed the result.
+* The actual binary was then executed, which showed the result of the calculation.
 
 If you prefer you can also let the compiler do the heavy-lifting, and generate an executable for you directly.  Simply add `-compile`, and execute the generated `a.out` binary:
 
@@ -75,11 +75,26 @@ If you prefer you can also let the compiler do the heavy-lifting, and generate a
     $ a.out
     Result 256
 
+Or to compile __and__ execute directly:
+
+    $ ./math-compiler -run '3 45 * 9 +  12 /'
+    Result 12
+
+
 
 
 ## Test Cases
 
-There are some test-cases contained in [test.sh](test.sh):
+The codebase itself contains some simple test-cases, however these are
+not comprehensive.
+
+To execute the tests use the standard approach:
+
+    $ go test [-race] ./...
+
+In addition to the internal test cases there are also some functional tests
+contained in [test.sh](test.sh) - these perform some calculations and verify
+they produce the correct result.
 
     frodo ~/go/src/github.com/skx/math-compiler $ ./test.sh
     ...
