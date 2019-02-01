@@ -70,7 +70,7 @@ func (l *Lexer) NextToken() token.Token {
 		if isDigit(l.ch) {
 			return l.readDecimal()
 		} else {
-			panic("Invalid input")
+			tok = newToken(token.ERROR, l.ch)
 		}
 	}
 	l.readChar()

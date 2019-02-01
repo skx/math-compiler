@@ -12,6 +12,7 @@ type Token struct {
 // pre-defined TokenType
 const (
 	EOF      = "EOF"
+	ERROR    = "ERROR"
 	INT      = "INT"
 	PLUS     = "+"
 	MINUS    = "-"

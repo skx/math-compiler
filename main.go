@@ -57,6 +57,11 @@ func main() {
 		if tok.Type == token.EOF {
 			break
 		}
+		if tok.Type == token.ERROR {
+			fmt.Printf("Error parsing input\n")
+			os.Exit(1)
+			break
+		}
 		program = append(program, tok)
 	}
 
