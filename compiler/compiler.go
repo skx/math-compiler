@@ -149,16 +149,21 @@ func (c *Compiler) Output() (string, error) {
 		case token.MOD:
 
 			//
-			// Modulus is a cheat - div/idiv will handle
-			// setting the remainder in `edx`.  But you
-			// need to clear it first to avoid bogus
-			// values.
+			// Modulus is a cheat as `div` will handle
+			// setting the remainder in `edx`.
+			//
+			// In brief we need:
+			//
+			//  xor rdx,rdx      ;; clear lower-bits
+			//  mv rbx, val      ;; store
+			//  div [eax], [rbx] ;; divide
+			//  mov eax, rdx     ;; move result
 			//
 			operations = append(operations, `xor rdx, rdx`)
-			operations = append(operations, `mov rax, `+i)
+			operations = append(operations, `mov rbx, `+i)
 			operations = append(operations, `cqo`)
 			operations = append(operations, `div rbx`)
-			operations = append(operations, `mov eax, edx`)
+			operations = append(operations, `mov rax, rdx`)
 
 		case token.MINUS:
 			operations = append(operations, `sub rax,`+i)

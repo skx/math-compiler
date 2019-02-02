@@ -7,12 +7,21 @@
 #
 
 
+# Compile an expression and compare the result with a fixed value
 test_compile() {
     input="$1"
     result="$2"
 
+    #
+    # Do this the long way round so we have assembly file for
+    # inspection if/when a test fails.
+    #
     go run main.go "${input}" > test.s
     gcc -static -o ./test test.s
+
+    #
+    # Run the test.
+    #
     out=$(./test  | awk '{print $NF}')
 
     if [ "${result}" = "${out}" ]; then
@@ -20,17 +29,32 @@ test_compile() {
         rm test test.s
     else
         echo "Expected output of '$input' is '$result' - got '${out}' instead"
+        exit 1
     fi
 
 }
 
 
 
-
+# Simple operations
 test_compile '3 4 +' 7
 test_compile '3 4 *' 12
 test_compile '10 2 -' 8
 test_compile '10 2 /' 5
+
+# modulus
+test_compile  '1 4 %' 1
+test_compile  '2 4 %' 2
+test_compile  '3 4 %' 3
+test_compile  '4 4 %' 0
+test_compile  '5 4 %' 1
+test_compile  '6 4 %' 2
+test_compile  '7 4 %' 3
+test_compile  '8 4 %' 0
+test_compile  '9 4 %' 1
+test_compile '10 4 %' 2
+test_compile '11 4 %' 3
+test_compile '12 4 %' 0
 
 # powers of two - the manual-way
 test_compile '2 2 *' 4
@@ -65,9 +89,9 @@ test_compile '2 16 ^'      65536
 test_compile '2 30 ^' 1073741824
 
 
-
-
-
 # Note we're operating on integers, so these are "correct".
 test_compile '3 2 /' 1
 test_compile '5 2 /' 2
+
+
+exit 0
