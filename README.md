@@ -2,11 +2,22 @@
 
 This project contains the simplest possible compiler, which converts simple mathematical operations into assembly language, allowing all the speed in your sums!
 
+Because this is a simple project it operates solely upon integers, and
+provides only the following primitives:
+
+* `+` - Plus
+* `-` - Minus
+* `*` - Multiply
+* `/` - Divide
+* `^` - Raise to a power
+* `%` - Modulus
+
 
 
 # Installation
 
-To install this glorious-tool, assuming you have a working [golang](https://golang.org/) installation:
+
+Providing you have a working [go-installation](https://golang.org/) you should be able to install this software by running:
 
     $ go get -u github.com/skx/math-compiler
 
@@ -29,26 +40,6 @@ However I even simplified that, via the use of a "[Reverse Polish](https://en.wi
     4 54 * 2 +
 
 (In our case we have no stack, so we just assume "operand ... operand operator", constantly.)
-
-
-## Supported Operations
-
-We support the following operations:
-
-* `+` - Plus
-  * `1 + 2` is expressed `1 2 +`
-* `-` - Minus
-  * `4 - 2` is expressed `4 2 -`
-* `*` - Multiply
-  * `4 * 4` is expressed `4 4 *`
-* `/` - Divide
-  * `40 / 10` is expressed `40 10 /`
-* `^` - Raise to a power
-  * `2 ^ 4` is expressed `2 4 ^`
-* `%` - Modulus
-  * `7 % 5` is expressed `7 5 %`
-
-Hopefully you can see how those are chained, so the sum `(3 + (5 * 5)) / 2` would be written as `5 5 * 3 + 2 /`.
 
 
 
@@ -85,10 +76,9 @@ Or to compile __and__ execute directly:
 
 ## Test Cases
 
-The codebase itself contains some simple test-cases, however these are
-not comprehensive.
+The codebase itself contains some simple test-cases, however these are not comprehensive as a large part of our operation is merely to populate a simple template-file, and it is hard to test that.
 
-To execute the tests use the standard approach:
+To execute the integrated tests use the standard go approach:
 
     $ go test [-race] ./...
 
@@ -125,6 +115,27 @@ As you can see the registers can store a different number of bits, depending on 
                    ==  al (8 bits)
 
 I believe that means we should be OK to store 64-bit numbers.
+
+
+
+## Possible Expansion?
+
+The obvious thing to improve in this compiler is to add support for
+floating-point operations.  Adding support for floating point operations would allow the following program to produce a valid result:
+
+      3 2 /
+
+We'd also gain the ability to run Sin, Cos, Tan, etc.  Though that would
+require the lexer to be updated to allow:
+
+      3 cos 12 +
+
+(i.e. "`12 + cos(3)`")
+
+The following brief page documents the approach required, although the devil will be in the details, as always:
+
+* https://en.wikibooks.org/wiki/X86_Assembly/Floating_Point
+
 
 
 
