@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"text/template"
 
 	"github.com/skx/math-compiler/lexer"
@@ -157,7 +158,7 @@ func (c *Compiler) Output() (string, error) {
 	// Walk over the array of tokens - skipping the first one,
 	// which is our initial value.
 	//
-	for _, ent := range c.tokens[1:] {
+	for offset, ent := range c.tokens[1:] {
 
 		switch ent.Type {
 
@@ -182,8 +183,6 @@ func (c *Compiler) Output() (string, error) {
 
 		case token.MOD:
 
-			return "", fmt.Errorf("token.MOD - not implemented")
-
 		case token.MINUS:
 
 			// load the (current) result
@@ -197,8 +196,58 @@ func (c *Compiler) Output() (string, error) {
 			operations = append(operations, `fstp qword ptr [result]`)
 
 		case token.POWER:
-			return "", fmt.Errorf("token.POWER - not implemented")
 
+			// ensure that "i" is an int
+			if strings.Contains(i, ".") {
+				return "", fmt.Errorf("Can only raise a number to an integer-power")
+			}
+
+			//
+			// N ^ 0 -> 0
+			// N ^ 1 -> N
+			// N ^ 2 -> N * N
+			// N ^ 3 -> N * N * N
+			// ..
+			//
+			fmt.Printf("# ^ %s\n", i)
+			switch i {
+			case "0":
+				operations = append(operations, `fldz`)
+				operations = append(operations, `fstp qword ptr [result]`)
+			case "1":
+				// nop
+			default:
+				//
+				// We'll want to output a loop which
+				// means we need a unique label
+				//
+				// We generate the label ID as the offset of
+				// the statement we're generating in our input
+				//
+				label := fmt.Sprintf("label_%d", offset)
+
+				// load the (current) result
+				operations = append(operations, `fld qword ptr [result]`)
+
+				// store in `int`
+				operations = append(operations, `fst qword ptr [int]`)
+
+				//
+				// Output the loop to calculate the power.
+				//
+				operations = append(operations, `mov rcx, `+i)
+				operations = append(operations, `dec rcx`)
+				operations = append(operations, label+":")
+				operations = append(operations, `  fmul qword ptr [int]`)
+				operations = append(operations, `  dec rcx`)
+				operations = append(operations, `  jnz `+label)
+
+				//
+				// Store the value
+				//
+				operations = append(operations, `fstp qword ptr [result]`)
+
+			}
 		case token.SLASH:
 
 			if i == "0" {
@@ -305,6 +354,7 @@ func (c *Compiler) Output() (string, error) {
 #               the starting value, and any constants we use.
 .data
 result: .double {{.Start}}
+int: .double 0.0
 fmt:   .asciz "Result %g\n"
 {{range .Constants}}const_{{.}}: .double {{.}}
 {{end}}
