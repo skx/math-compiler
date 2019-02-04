@@ -45,15 +45,16 @@ func (l *Lexer) NextToken() token.Token {
 	case rune('^'):
 		tok = newToken(token.POWER, l.ch)
 	case rune('-'):
-		// -3 is "-3".  "3 - 4" is -1.
+		// "-3" is "-3", "-3.4" is "-3.4", but "3 - 4" is -1 (via the distinct tokens "3", "-", "4".)
 		if isDigit(l.peekChar()) {
+
 			// swallow the -
 			l.readChar()
 
-			// read the number
-			tok.Literal = l.readNumber()
-			tok.Type = token.NUMBER
+			// read an int/float
+			tok = l.readDecimal()
 
+			// ensure the sign is not lost.
 			tok.Literal = "-" + tok.Literal
 
 		} else {
@@ -89,11 +90,11 @@ func (l *Lexer) skipWhitespace() {
 	}
 }
 
-// read number - this handles 0x1234 and 0b101010101 too.
+// readNumber handles reading a number, comprising of digits 0-9.
 func (l *Lexer) readNumber() string {
 	str := ""
 
-	// We usually just accept digits.
+	// We only accept digits.
 	accept := "0123456789"
 
 	for strings.Contains(accept, string(l.ch)) {
@@ -103,14 +104,36 @@ func (l *Lexer) readNumber() string {
 	return str
 }
 
-// read decimal
+// read a decimal / floating point number.
 func (l *Lexer) readDecimal() token.Token {
 
 	//
 	// Read an integer-number.
 	//
 	integer := l.readNumber()
+
+	//
+	// We might have more content:
+	//
+	//   .[digits]  -> Which converts us from an int to a float.
+	//
+	if l.ch == rune('.') && isDigit(l.peekChar()) {
+
+		//
+		// OK here we think we've got a float.
+		//
+		// Skip the period.
+		//
+		l.readChar()
+
+		//
+		// Read the fractional part.
+		//
+		fraction := l.readNumber()
+		return token.Token{Type: token.NUMBER, Literal: integer + "." + fraction}
+	}
 	return token.Token{Type: token.NUMBER, Literal: integer}
+
 }
 
 // peek character
