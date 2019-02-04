@@ -1,8 +1,30 @@
+// compiler contains our simple compiler.
+//
+// In brief it uses the lexer to tokenize the expression, and outputs
+// a simple assembly language program.
+//
+// There are only two minor complications:
+//
+//  1.  We store all the input-floats in the data-area of the program.
+//      These require escaping for uniqueness purposes.
+//
+//  2.  We output different instructions based on the operator.
+//
+//  we could do better with an intermediary form, concatenating small
+// segments of code, and avoiding the frequent loads from the `result`
+// location.
+//
+// That said this is a toy, and will remain a toy, so I can live with
+// these problems.
+//
+
 package compiler
 
 import (
 	"bytes"
 	"fmt"
+	"os"
+	"strconv"
 	"text/template"
 
 	"github.com/skx/math-compiler/lexer"
@@ -43,13 +65,20 @@ func (c *Compiler) Compile() error {
 	// First of all populate that `program` array with our tokens.
 	//
 	for {
+		// Get the next token.
 		tok := lexed.NextToken()
+
+		// If end of stream then break.
 		if tok.Type == token.EOF {
 			break
 		}
+
+		// If error then abort.
 		if tok.Type == token.ERROR {
 			return (fmt.Errorf("Error parsing input; token.ERROR returned from the lexer"))
 		}
+
+		// Otherwise append the token to our program.
 		c.tokens = append(c.tokens, tok)
 	}
 
@@ -63,21 +92,8 @@ func (c *Compiler) Compile() error {
 	//
 	// If the first token isn't a number we're in trouble
 	//
-	if c.tokens[0].Type != token.NUMBER{
-		return (fmt.Errorf("We expected the program to begin with an integer!\n"))
-	}
-
-	//
-	// The program should have:
-	//   starting-value
-	//   NUMBER OPERATOR..
-	//   NUMBER OPERATOR..
-	//   ..
-	//   NUMBER OPERATOR..
-	//
-	// That means the program should always have an odd-length
-	if len(c.tokens)%2 == 0 {
-		return (fmt.Errorf("The program should always have an odd-length"))
+	if c.tokens[0].Type != token.NUMBER {
+		return (fmt.Errorf("We expected the program to begin with a numeric thing!\n"))
 	}
 
 	//
@@ -118,6 +134,21 @@ func (c *Compiler) Output() (string, error) {
 	var operations []string
 
 	//
+	// Constants we come across.
+	//
+	// Rather than placing the integers in-line we're storing them
+	// in the constant area.  This gives us a level of indirection,
+	// but it simpler to reason about.
+	//
+	// Note that if we see "3 + 4 + 3 + 4" we only store each of
+	// the constants once each.  So we have a map here, key is the
+	// value of the constant, and `bool` to record that we found it.
+	//
+	// Later we'll output just the unique keys.
+	//
+	constants := make(map[string]bool)
+
+	//
 	// Temporary-storage for the number we're operating upon next.
 	//
 	var i string
@@ -126,107 +157,102 @@ func (c *Compiler) Output() (string, error) {
 	// Walk over the array of tokens - skipping the first one,
 	// which is our initial value.
 	//
-	for offset, ent := range c.tokens[1:] {
+	for _, ent := range c.tokens[1:] {
 
-		//
-		// If we have no number then save it.
-		//
-		if i == "" {
-			// number
-			i = ent.Literal
-			continue
-		}
-
-		//
-		// The number is already set, so we're now expecting
-		// an operator which will be applied to it.
-		//
 		switch ent.Type {
 
+		case token.NUMBER:
+			// Save the literal value away
+			i = ent.Literal
+
+			// Record that this constant is set.
+			constants[ent.Literal] = true
+
 		case token.PLUS:
-			operations = append(operations, `add rax, `+i)
+
+			// load the (current) result
+			operations = append(operations, `fld qword ptr [result]`)
+
+			// add the constant
+			constant := c.escapeConstant(i)
+			operations = append(operations, `fadd qword ptr [`+constant+`]`)
+
+			// store back in the result store.
+			operations = append(operations, `fstp qword ptr [result]`)
 
 		case token.MOD:
 
-			//
-			// Modulus is a cheat as `div` will handle
-			// setting the remainder in `edx`.
-			//
-			// In brief we need:
-			//
-			//  xor rdx,rdx      ;; clear lower-bits
-			//  mv rbx, val      ;; store
-			//  div [eax], [rbx] ;; divide
-			//  mov eax, rdx     ;; move result
-			//
-			operations = append(operations, `xor rdx, rdx`)
-			operations = append(operations, `mov rbx, `+i)
-			operations = append(operations, `cqo`)
-			operations = append(operations, `div rbx`)
-			operations = append(operations, `mov rax, rdx`)
+			return "", fmt.Errorf("token.MOD - not implemented")
 
 		case token.MINUS:
-			operations = append(operations, `sub rax,`+i)
+
+			// load the (current) result
+			operations = append(operations, `fld qword ptr [result]`)
+
+			// subtract the constant
+			constant := c.escapeConstant(i)
+			operations = append(operations, `fsub qword ptr [`+constant+`]`)
+
+			// store back in the result store.
+			operations = append(operations, `fstp qword ptr [result]`)
 
 		case token.POWER:
+			return "", fmt.Errorf("token.POWER - not implemented")
 
-			//
-			// N ^ 0 -> 0
-			// N ^ 1 -> N
-			// N ^ 2 -> N * N
-			// N ^ 3 -> N * N * N
-			// ..
-			//
-			switch i {
-			case "0":
-				operations = append(operations, `xor rax, rax`)
-			case "1":
-				// nop
-			default:
-				//
-				// We'll want to output a loop which
-				// means we need a unique label
-				//
-				// We generate the label ID as the offset of
-				// the statement we're generating in our input
-				//
-				label := fmt.Sprintf("label_%d", offset)
-
-				//
-				// Output the loop to calculate the power.
-				//
-				operations = append(operations, `mov rcx, `+i)
-				operations = append(operations, `mov ebx, eax`)
-				operations = append(operations, `dec rcx`)
-				operations = append(operations, label+":")
-				operations = append(operations, `  mul ebx`)
-				operations = append(operations, `  dec rcx`)
-				operations = append(operations, `  jnz `+label)
-			}
 		case token.SLASH:
-			// Handle a division by zero at run-time.
-			// We could catch it at generation-time, just as well..
+
 			if i == "0" {
-				operations = append(operations, `jmp div_by_zero`)
-			} else {
-				operations = append(operations, `mov ebx, `+i)
-				operations = append(operations, `cqo`)
-				operations = append(operations, `div ebx`)
+				fmt.Printf("Division by zero!")
+				os.Exit(1)
+
 			}
+
+			// load the (current) result
+			operations = append(operations, `fld qword ptr [result]`)
+
+			// divide by the constant
+			constant := c.escapeConstant(i)
+			operations = append(operations, `fdiv qword ptr [`+constant+`]`)
+
+			// store back in the result store.
+			operations = append(operations, `fstp qword ptr [result]`)
 
 		case token.ASTERISK:
-			operations = append(operations, `mov ebx, `+i)
-			operations = append(operations, `mul ebx`)
+
+			// load the (current) result
+			operations = append(operations, `fld qword ptr [result]`)
+
+			// multiply by the constant
+			constant := c.escapeConstant(i)
+			operations = append(operations, `fmul qword ptr [`+constant+`]`)
+
+			// store back in the result store.
+			operations = append(operations, `fstp qword ptr [result]`)
+
+		case token.SIN:
+
+			// load the (current) result
+			operations = append(operations, `fld qword ptr [result]`)
+
+			// run the sin
+			operations = append(operations, `fsin`)
+
+			// store back in the result store.
+			operations = append(operations, `fstp qword ptr [result]`)
+
+		case token.COS:
+			// load the (current) result
+			operations = append(operations, `fld qword ptr [result]`)
+
+			// run the cos
+			operations = append(operations, `fcos`)
+
+			// store back in the result store.
+			operations = append(operations, `fstp qword ptr [result]`)
 
 		default:
 			return "", fmt.Errorf("Invalid program - expected operator, but found %v\n", ent)
 		}
-
-		//
-		// Next time around the loop we'll be looking for
-		// a number, rather than an operator.
-		//
-		i = ""
 	}
 
 	//
@@ -236,8 +262,14 @@ func (c *Compiler) Output() (string, error) {
 	// our output-template.
 	//
 	type Assembly struct {
-		Start      string
+		// The starting value.
+		Start string
+
+		// The operations we carry out.
 		Operations []string
+
+		// Any constants we load.
+		Constants []string
 	}
 
 	//
@@ -256,33 +288,44 @@ func (c *Compiler) Output() (string, error) {
 	out.Operations = operations
 
 	//
+	// The constants
+	//
+	for key, _ := range constants {
+		out.Constants = append(out.Constants, key)
+	}
+
+	//
 	// This is the template we'll output.
 	//
-	assembly := `.intel_syntax noprefix
+	assembly := `
+.intel_syntax noprefix
 .global main
 
+# Data-section: Contains the format-string for our output message,
+#               the starting value, and any constants we use.
 .data
-format: .asciz "Division by zero\n"
-result: .asciz "Result %d\n"
+result: .double {{.Start}}
+fmt:   .asciz "Result %g\n"
+{{range .Constants}}const_{{.}}: .double {{.}}
+{{end}}
 
 main:
- mov rax, {{.Start}}
+        push	rbp
+
 {{range .Operations}} {{.}}
 {{end}}
- lea rdi,result
- mov rsi, rax
- xor rax, rax
- call printf
- xor rax, rax
- ret
 
-div_by_zero:
- push rbx
- lea  rdi,format
- call printf
- pop rbx
- mov rax, 0
- ret
+        # print the result
+        lea rdi,fmt
+        movq rax, 1
+        movq xmm0, [result]
+        call printf
+
+        # clean and exit
+        pop	rbp
+        xor rax, rax
+        ret
+
 `
 
 	//
@@ -301,4 +344,23 @@ div_by_zero:
 
 	return buf.String(), nil
 
+}
+
+// escapeConstant converts a floating-point number such as
+// "1.2", or "-1.3" into a constant value that can be embedded
+// safely into our generated assembly-language file.
+func (c *Compiler) escapeConstant(input string) string {
+
+	// Convert "3.0" to "const_3.0"
+	s, err := strconv.ParseFloat(input, 32)
+
+	if err != nil {
+		fmt.Printf("Failed to parse '%s' into a float\n", input)
+		fmt.Printf("%s\n", err.Error())
+	}
+
+	if s < 0 {
+		return fmt.Sprintf("const_neg_%s", input)
+	}
+	return fmt.Sprintf("const_%s", input)
 }
