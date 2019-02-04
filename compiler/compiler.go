@@ -63,7 +63,7 @@ func (c *Compiler) Compile() error {
 	//
 	// If the first token isn't a number we're in trouble
 	//
-	if c.tokens[0].Type != token.INT {
+	if c.tokens[0].Type != token.NUMBER{
 		return (fmt.Errorf("We expected the program to begin with an integer!\n"))
 	}
 

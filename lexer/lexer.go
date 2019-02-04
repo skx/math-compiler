@@ -52,7 +52,7 @@ func (l *Lexer) NextToken() token.Token {
 
 			// read the number
 			tok.Literal = l.readNumber()
-			tok.Type = token.INT
+			tok.Type = token.NUMBER
 
 			tok.Literal = "-" + tok.Literal
 
@@ -110,7 +110,7 @@ func (l *Lexer) readDecimal() token.Token {
 	// Read an integer-number.
 	//
 	integer := l.readNumber()
-	return token.Token{Type: token.INT, Literal: integer}
+	return token.Token{Type: token.NUMBER, Literal: integer}
 }
 
 // peek character

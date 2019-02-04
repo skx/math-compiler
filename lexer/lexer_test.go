@@ -14,10 +14,10 @@ func TestParseNumbers(t *testing.T) {
 		expectedType    token.TokenType
 		expectedLiteral string
 	}{
-		{token.INT, "3"},
-		{token.INT, "43"},
-		{token.INT, "-17"},
-		{token.INT, "-3"},
+		{token.NUMBER, "3"},
+		{token.NUMBER, "43"},
+		{token.NUMBER, "-17"},
+		{token.NUMBER, "-3"},
 		{token.EOF, ""},
 	}
 	l := New(input)
@@ -74,7 +74,7 @@ func TestParseBogus(t *testing.T) {
 		{token.ERROR, "e"},
 		{token.ERROR, "v"},
 		{token.ERROR, "e"},
-		{token.INT, "3"},
+		{token.NUMBER, "3"},
 		{token.EOF, ""},
 	}
 	l := New(input)

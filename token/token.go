@@ -13,7 +13,7 @@ type Token struct {
 const (
 	EOF      = "EOF"
 	ERROR    = "ERROR"
-	INT      = "INT"
+	NUMBER   = "NUMBER"
 	PLUS     = "+"
 	MINUS    = "-"
 	ASTERISK = "*"
