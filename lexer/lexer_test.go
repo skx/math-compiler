@@ -95,11 +95,7 @@ func TestParseBogus(t *testing.T) {
 		expectedType    token.TokenType
 		expectedLiteral string
 	}{
-		{token.ERROR, "s"},
-		{token.ERROR, "t"},
-		{token.ERROR, "e"},
-		{token.ERROR, "v"},
-		{token.ERROR, "e"},
+		{token.ERROR, "steve"},
 		{token.NUMBER, "3"},
 		{token.EOF, ""},
 	}

@@ -70,9 +70,10 @@ func (l *Lexer) NextToken() token.Token {
 	default:
 		if isDigit(l.ch) {
 			return l.readDecimal()
-		} else {
-			tok = newToken(token.ERROR, l.ch)
 		}
+
+		tok.Literal = l.readIdentifier()
+		tok.Type = token.LookupIdentifier(tok.Literal)
 	}
 	l.readChar()
 	return tok
@@ -152,4 +153,46 @@ func isWhitespace(ch rune) bool {
 // is Digit
 func isDigit(ch rune) bool {
 	return rune('0') <= ch && ch <= rune('9')
+}
+
+// readIdentifier is designed to read an identifier (name of variable,
+// function, etc).
+//
+// However there is a complication due to our historical implementation
+// of the standard library.  We really want to stop identifiers if we hit
+// a period, to allow method-calls to work on objects.
+//
+// So with input like this:
+//
+//   a.blah();
+//
+// Our identifier should be "a" (then we have a period, then a second
+// identifier "blah", followed by opening & closing parenthesis).
+//
+// However we also have to cover the case of:
+//
+//    string.toupper( "blah" );
+//    os.getenv( "PATH" );
+//    ..
+//
+// So we have a horrid implementation..
+func (l *Lexer) readIdentifier() string {
+
+	id := ""
+
+	//
+	// Build up our identifier, handling only valid characters.
+	//
+	for isIdentifier(l.ch) {
+		id += string(l.ch)
+		l.readChar()
+	}
+
+	// And now our pain is over.
+	return id
+}
+
+// determinate ch is identifier or not
+func isIdentifier(ch rune) bool {
+	return !isDigit(ch) && !isWhitespace(ch) && ch != rune(0)
 }
