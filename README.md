@@ -2,8 +2,7 @@
 
 This project contains the simplest possible compiler, which converts simple mathematical operations into assembly language, allowing all the speed in your sums!
 
-Because this is a simple project it operates solely upon integers, and
-provides only the following primitives:
+Because this is a simple project it provides only a small number of primitives:
 
 * `+` - Plus
 * `-` - Minus
@@ -11,7 +10,10 @@ provides only the following primitives:
 * `/` - Divide
 * `^` - Raise to a power
 * `%` - Modulus
+* `sin`
+* `cos`
 
+Operations may return floating-point numbers, and negative numbers though, which is nice to see.
 
 
 # Installation
@@ -120,22 +122,14 @@ I believe that means we should be OK to store 64-bit numbers.
 
 ## Possible Expansion?
 
-The obvious thing to improve in this compiler is to add support for
-floating-point operations.  Adding support for floating point operations would allow the following program to produce a valid result:
+The obvious thing to improve in this compiler is to add support for more floating-point operations, such as square-roots, and similar.
 
-      3 2 /
+At the moment basic-support is present, allowing calcuations such as this to produce the correct result:
 
-We'd also gain the ability to run Sin, Cos, Tan, etc.  Though that would
-require the lexer to be updated to allow:
-
-      3 cos 12 +
-
-(i.e. "`12 + cos(3)`")
-
-The following brief page documents the approach required, although the devil will be in the details, as always:
-
-* https://en.wikibooks.org/wiki/X86_Assembly/Floating_Point
-
+* `3 2 /`
+  * Correctly returns `1.5`
+* `1 3 / 9 *`
+  * Correctly returns 1/3 * 9 == `3`.
 
 
 
