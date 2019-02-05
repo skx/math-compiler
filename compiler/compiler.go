@@ -183,6 +183,32 @@ func (c *Compiler) Output() (string, error) {
 
 		case token.MOD:
 
+			// ensure that "i" is an int
+			if strings.Contains(i, ".") {
+				return "", fmt.Errorf("Can only run a modulus operation with an integer")
+			}
+
+			// load the (current) result
+			operations = append(operations, `fld qword ptr [result]`)
+			// found to float
+			operations = append(operations, `frndint`)
+			// store back
+			operations = append(operations, `fistp qword ptr [result]`) // set that value in rax
+			operations = append(operations, `mov rax, qword ptr [result]`)
+
+			// do the modulus.  magic.
+			operations = append(operations, `xor rdx, rdx`)
+			operations = append(operations, `mov rbx, `+i)
+			operations = append(operations, `cqo`)
+			operations = append(operations, `div rbx`)
+			operations = append(operations, `mov rax, rdx`)
+
+			// store back the result of eax into the address, appropriately
+			operations = append(operations, `mov qword ptr[result], rax`)
+			operations = append(operations, `fild qword ptr [result]
+`)
+			operations = append(operations, `fstp qword ptr [result]`)
+
 		case token.MINUS:
 
 			// load the (current) result

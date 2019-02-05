@@ -43,18 +43,18 @@ test_compile '10 2 -' 8
 test_compile '10 2 /' 5
 
 # modulus
-#test_compile  '1 4 %' 1
-#test_compile  '2 4 %' 2
-#test_compile  '3 4 %' 3
-#test_compile  '4 4 %' 0
-#test_compile  '5 4 %' 1
-#test_compile  '6 4 %' 2
-#test_compile  '7 4 %' 3
-#test_compile  '8 4 %' 0
-#test_compile  '9 4 %' 1
-#test_compile '10 4 %' 2
-#test_compile '11 4 %' 3
-#test_compile '12 4 %' 0
+test_compile  '1 4 %' 1
+test_compile  '2 4 %' 2
+test_compile  '3 4 %' 3
+test_compile  '4 4 %' 0
+test_compile  '5 4 %' 1
+test_compile  '6 4 %' 2
+test_compile  '7 4 %' 3
+test_compile  '8 4 %' 0
+test_compile  '9 4 %' 1
+test_compile '10 4 %' 2
+test_compile '11 4 %' 3
+test_compile '12 4 %' 0
 
 # powers of two - the manual-way
 test_compile '2 2 *' 4
