@@ -82,7 +82,6 @@ func TestValidOutput(t *testing.T) {
 		"2 0 ^",  // N ^ 0 is a special case
 		"2 1 ^",  // N ^ 1 is a special case
 		"2 12 ^", // N ^ 12 is NOT a special case!
-		"3 0 /",  // division by zero
 	}
 
 	for _, test := range tests {
@@ -117,12 +116,12 @@ func TestValidOutput(t *testing.T) {
 //   "compile".
 //   "output".
 //
-// We just look for errors here.
-//
 func TestInvalidOutput(t *testing.T) {
 
 	tests := []string{
-		"1 2 - 3 3",
+		"3 0 /",
+		"3 3.3 %",
+		"2 3.4 ^",
 	}
 
 	for _, test := range tests {
@@ -133,14 +132,13 @@ func TestInvalidOutput(t *testing.T) {
 		// compile
 		err := c.Compile()
 		if err != nil {
-			t.Errorf("We didn't expect an error compiling our program, but found one %s", err.Error())
+			t.Errorf("We didn't expect an error compiling an invalid program, but found one %s", err.Error())
 		}
 
 		// output
 		_, err = c.Output()
 		if err == nil {
-			t.Errorf("We expected an error outputing our invalid program, but found none")
+			t.Errorf("We expected an error outputing an invalid program, but found none")
 		}
-
 	}
 }

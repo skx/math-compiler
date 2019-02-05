@@ -45,15 +45,16 @@ func (l *Lexer) NextToken() token.Token {
 	case rune('^'):
 		tok = newToken(token.POWER, l.ch)
 	case rune('-'):
-		// -3 is "-3".  "3 - 4" is -1.
+		// "-3" is "-3", "-3.4" is "-3.4", but "3 - 4" is -1 (via the distinct tokens "3", "-", "4".)
 		if isDigit(l.peekChar()) {
+
 			// swallow the -
 			l.readChar()
 
-			// read the number
-			tok.Literal = l.readNumber()
-			tok.Type = token.INT
+			// read an int/float
+			tok = l.readDecimal()
 
+			// ensure the sign is not lost.
 			tok.Literal = "-" + tok.Literal
 
 		} else {
@@ -69,9 +70,10 @@ func (l *Lexer) NextToken() token.Token {
 	default:
 		if isDigit(l.ch) {
 			return l.readDecimal()
-		} else {
-			tok = newToken(token.ERROR, l.ch)
 		}
+
+		tok.Literal = l.readIdentifier()
+		tok.Type = token.LookupIdentifier(tok.Literal)
 	}
 	l.readChar()
 	return tok
@@ -89,11 +91,11 @@ func (l *Lexer) skipWhitespace() {
 	}
 }
 
-// read number - this handles 0x1234 and 0b101010101 too.
+// readNumber handles reading a number, comprising of digits 0-9.
 func (l *Lexer) readNumber() string {
 	str := ""
 
-	// We usually just accept digits.
+	// We only accept digits.
 	accept := "0123456789"
 
 	for strings.Contains(accept, string(l.ch)) {
@@ -103,14 +105,36 @@ func (l *Lexer) readNumber() string {
 	return str
 }
 
-// read decimal
+// read a decimal / floating point number.
 func (l *Lexer) readDecimal() token.Token {
 
 	//
 	// Read an integer-number.
 	//
 	integer := l.readNumber()
-	return token.Token{Type: token.INT, Literal: integer}
+
+	//
+	// We might have more content:
+	//
+	//   .[digits]  -> Which converts us from an int to a float.
+	//
+	if l.ch == rune('.') && isDigit(l.peekChar()) {
+
+		//
+		// OK here we think we've got a float.
+		//
+		// Skip the period.
+		//
+		l.readChar()
+
+		//
+		// Read the fractional part.
+		//
+		fraction := l.readNumber()
+		return token.Token{Type: token.NUMBER, Literal: integer + "." + fraction}
+	}
+	return token.Token{Type: token.NUMBER, Literal: integer}
+
 }
 
 // peek character
@@ -129,4 +153,46 @@ func isWhitespace(ch rune) bool {
 // is Digit
 func isDigit(ch rune) bool {
 	return rune('0') <= ch && ch <= rune('9')
+}
+
+// readIdentifier is designed to read an identifier (name of variable,
+// function, etc).
+//
+// However there is a complication due to our historical implementation
+// of the standard library.  We really want to stop identifiers if we hit
+// a period, to allow method-calls to work on objects.
+//
+// So with input like this:
+//
+//   a.blah();
+//
+// Our identifier should be "a" (then we have a period, then a second
+// identifier "blah", followed by opening & closing parenthesis).
+//
+// However we also have to cover the case of:
+//
+//    string.toupper( "blah" );
+//    os.getenv( "PATH" );
+//    ..
+//
+// So we have a horrid implementation..
+func (l *Lexer) readIdentifier() string {
+
+	id := ""
+
+	//
+	// Build up our identifier, handling only valid characters.
+	//
+	for isIdentifier(l.ch) {
+		id += string(l.ch)
+		l.readChar()
+	}
+
+	// And now our pain is over.
+	return id
+}
+
+// determinate ch is identifier or not
+func isIdentifier(ch rune) bool {
+	return !isDigit(ch) && !isWhitespace(ch) && ch != rune(0)
 }
