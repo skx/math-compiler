@@ -12,6 +12,8 @@ Because this is a simple project it provides only a small number of primitives:
 * `%` - Modulus
 * `sin`
 * `cos`
+* `tan`
+* `sqrt`
 
 Operations may return floating-point numbers, and negative numbers though, which is nice to see.
 
@@ -122,7 +124,7 @@ I believe that means we should be OK to store 64-bit numbers.
 
 ## Possible Expansion?
 
-The obvious thing to improve in this compiler is to add support for more floating-point operations, such as square-roots, and similar.
+The obvious thing to improve in this compiler is to add support for more floating-point operations.
 
 At the moment basic-support is present, allowing calcuations such as this to produce the correct result:
 
