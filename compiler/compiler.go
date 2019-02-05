@@ -23,7 +23,6 @@ package compiler
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"text/template"
@@ -190,10 +189,11 @@ func (c *Compiler) Output() (string, error) {
 
 			// load the (current) result
 			operations = append(operations, `fld qword ptr [result]`)
-			// found to float
+			// round to float
 			operations = append(operations, `frndint`)
 			// store back
-			operations = append(operations, `fistp qword ptr [result]`) // set that value in rax
+			operations = append(operations, `fistp qword ptr [result]`)
+			// get that value in rax
 			operations = append(operations, `mov rax, qword ptr [result]`)
 
 			// do the modulus.  magic.
@@ -203,7 +203,7 @@ func (c *Compiler) Output() (string, error) {
 			operations = append(operations, `div rbx`)
 			operations = append(operations, `mov rax, rdx`)
 
-			// store back the result of eax into the address, appropriately
+			// store back the value in eax into the address, appropriately
 			operations = append(operations, `mov qword ptr[result], rax`)
 			operations = append(operations, `fild qword ptr [result]
 `)
@@ -238,10 +238,11 @@ func (c *Compiler) Output() (string, error) {
 			fmt.Printf("# ^ %s\n", i)
 			switch i {
 			case "0":
+				// store zero
 				operations = append(operations, `fldz`)
 				operations = append(operations, `fstp qword ptr [result]`)
 			case "1":
-				// nop
+				// nop - result doesn't change.
 			default:
 				//
 				// We'll want to output a loop which
@@ -274,12 +275,12 @@ func (c *Compiler) Output() (string, error) {
 				operations = append(operations, `fstp qword ptr [result]`)
 
 			}
+
 		case token.SLASH:
 
+			// prevent division by zero.
 			if i == "0" {
-				fmt.Printf("Division by zero!")
-				os.Exit(1)
-
+				return "", fmt.Errorf("Division by zero!")
 			}
 
 			// load the (current) result
@@ -311,6 +312,28 @@ func (c *Compiler) Output() (string, error) {
 
 			// run the sin
 			operations = append(operations, `fsin`)
+
+			// store back in the result store.
+			operations = append(operations, `fstp qword ptr [result]`)
+
+		case token.TAN:
+
+			// load the (current) result
+			operations = append(operations, `fld qword ptr [result]`)
+
+			// run the tan, via a two-step operation
+			operations = append(operations, `fsincos`)
+			operations = append(operations, `fdivr %st(0), st(1)`)
+			// store back in the result store.
+			operations = append(operations, `fstp qword ptr [result]`)
+
+		case token.SQRT:
+
+			// load the (current) result
+			operations = append(operations, `fld qword ptr [result]`)
+
+			// run the square root
+			operations = append(operations, `fsqrt`)
 
 			// store back in the result store.
 			operations = append(operations, `fstp qword ptr [result]`)

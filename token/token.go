@@ -27,15 +27,20 @@ const (
 	POWER = "^" // todo
 
 	// complex operations
-	COS = "cos"
-	SIN = "sin"
+	COS  = "cos"
+	SIN  = "sin"
+	SQRT = "sqrt"
+	TAN  = "tan"
+
 	// TAN = "tan" // todo / impossible?
 )
 
 // reversed keywords
 var keywords = map[string]TokenType{
-	"cos": COS,
-	"sin": SIN,
+	"cos":  COS,
+	"sin":  SIN,
+	"sqrt": SQRT,
+    "tan":  TAN,
 }
 
 // LookupIdentifier used to determinate whether identifier is keyword nor not
