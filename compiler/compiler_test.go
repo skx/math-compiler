@@ -20,11 +20,10 @@ func TestBogusInput(t *testing.T) {
 		"3 5 $",
 
 		// program with a missing operator
-		//TODO		"3 3",
+		"3 3",
 
 		// Again
-		//TODO TODO	"3 4 + 3",
-
+		"3 4 + 3",
 	}
 
 	for _, test := range tests {

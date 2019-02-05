@@ -97,6 +97,17 @@ func (c *Compiler) Compile() error {
 	}
 
 	//
+	// Get the last token
+	//
+	if len(c.tokens) > 1 {
+		len := len(c.tokens)
+		end := c.tokens[len-1]
+		if end.Type == token.NUMBER {
+			return fmt.Errorf("Program ends with a number, which is invalid!")
+		}
+	}
+
+	//
 	// No error.
 	//
 	return nil
@@ -235,7 +246,6 @@ func (c *Compiler) Output() (string, error) {
 			// N ^ 3 -> N * N * N
 			// ..
 			//
-			fmt.Printf("# ^ %s\n", i)
 			switch i {
 			case "0":
 				// store zero
