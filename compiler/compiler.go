@@ -21,12 +21,10 @@
 package compiler
 
 import (
-	"bytes"
 	"fmt"
 	"strconv"
-	"strings"
-	"text/template"
 
+	"github.com/skx/math-compiler/instructions"
 	"github.com/skx/math-compiler/lexer"
 	"github.com/skx/math-compiler/token"
 )
@@ -41,6 +39,10 @@ type Compiler struct {
 	//
 	// The tokens are received from the lexer, and are not modified.
 	tokens []token.Token
+
+	// Instructions is the virtual instructions we're going to compile
+	// to assembly
+	instructions []instructions.Instruction
 }
 
 // New creates a new compiler, given the expression in the constructor.
@@ -118,340 +120,83 @@ func (c *Compiler) Compile() error {
 func (c *Compiler) Output() (string, error) {
 
 	//
-	// Get the starting integer.
+	// Walk our tokens.
 	//
-	start := c.tokens[0].Literal
+	for _, t := range c.tokens {
 
-	//
-	// We expect to work in pairs; reading two elements from
-	// our program.
-	//
-	// For example with the program:
-	//
-	//  3 4 + 5 * 2 /
-	//
-	// We're going to iterate over the program - skipping the first
-	// token - so we'll expect:
-	//
-	//  4 +
-	//  5 *
-	//  2 /
-	//
-	// i.e. Number, operator
-	//
-	// We'll populate an array of the operations we emit
-	// to assembly language.
-	//
-	var operations []string
-
-	//
-	// Constants we come across.
-	//
-	// Rather than placing the integers in-line we're storing them
-	// in the constant area.  This gives us a level of indirection,
-	// but it simpler to reason about.
-	//
-	// Note that if we see "3 + 4 + 3 + 4" we only store each of
-	// the constants once each.  So we have a map here, key is the
-	// value of the constant, and `bool` to record that we found it.
-	//
-	// Later we'll output just the unique keys.
-	//
-	constants := make(map[string]bool)
-
-	//
-	// Temporary-storage for the number we're operating upon next.
-	//
-	var i string
-
-	//
-	// Walk over the array of tokens - skipping the first one,
-	// which is our initial value.
-	//
-	for offset, ent := range c.tokens[1:] {
-
-		switch ent.Type {
-
+		switch t.Type {
 		case token.NUMBER:
-			// Save the literal value away
-			i = ent.Literal
 
-			// Record that this constant is set.
-			constants[ent.Literal] = true
+			// add the instruction
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Instruction: instructions.Push, Value: t.Literal})
 
 		case token.PLUS:
-
-			// load the (current) result
-			operations = append(operations, `fld qword ptr [result]`)
-
-			// add the constant
-			constant := c.escapeConstant(i)
-			operations = append(operations, `fadd qword ptr [`+constant+`]`)
-
-			// store back in the result store.
-			operations = append(operations, `fstp qword ptr [result]`)
+			// add the instruction
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Instruction: instructions.Plus, Args: 2})
 
 		case token.MOD:
-
-			// ensure that "i" is an int
-			if strings.Contains(i, ".") {
-				return "", fmt.Errorf("Can only run a modulus operation with an integer")
-			}
-
-			// load the (current) result
-			operations = append(operations, `fld qword ptr [result]`)
-			// round to float
-			operations = append(operations, `frndint`)
-			// store back
-			operations = append(operations, `fistp qword ptr [result]`)
-			// get that value in rax
-			operations = append(operations, `mov rax, qword ptr [result]`)
-
-			// do the modulus.  magic.
-			operations = append(operations, `xor rdx, rdx`)
-			operations = append(operations, `mov rbx, `+i)
-			operations = append(operations, `cqo`)
-			operations = append(operations, `div rbx`)
-			operations = append(operations, `mov rax, rdx`)
-
-			// store back the value in eax into the address, appropriately
-			operations = append(operations, `mov qword ptr[result], rax`)
-			operations = append(operations, `fild qword ptr [result]
-`)
-			operations = append(operations, `fstp qword ptr [result]`)
+			// add the instruction
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Instruction: instructions.Modulus, Args: 2})
 
 		case token.MINUS:
 
-			// load the (current) result
-			operations = append(operations, `fld qword ptr [result]`)
-
-			// subtract the constant
-			constant := c.escapeConstant(i)
-			operations = append(operations, `fsub qword ptr [`+constant+`]`)
-
-			// store back in the result store.
-			operations = append(operations, `fstp qword ptr [result]`)
+			// add the instruction
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Instruction: instructions.Minus, Args: 2})
 
 		case token.POWER:
 
-			// ensure that "i" is an int
-			if strings.Contains(i, ".") {
-				return "", fmt.Errorf("Can only raise a number to an integer-power")
-			}
-
-			//
-			// N ^ 0 -> 0
-			// N ^ 1 -> N
-			// N ^ 2 -> N * N
-			// N ^ 3 -> N * N * N
-			// ..
-			//
-			switch i {
-			case "0":
-				// store zero
-				operations = append(operations, `fldz`)
-				operations = append(operations, `fstp qword ptr [result]`)
-			case "1":
-				// nop - result doesn't change.
-			default:
-				//
-				// We'll want to output a loop which
-				// means we need a unique label
-				//
-				// We generate the label ID as the offset of
-				// the statement we're generating in our input
-				//
-				label := fmt.Sprintf("label_%d", offset)
-
-				// load the (current) result
-				operations = append(operations, `fld qword ptr [result]`)
-
-				// store in `int`
-				operations = append(operations, `fst qword ptr [int]`)
-
-				//
-				// Output the loop to calculate the power.
-				//
-				operations = append(operations, `mov rcx, `+i)
-				operations = append(operations, `dec rcx`)
-				operations = append(operations, label+":")
-				operations = append(operations, `  fmul qword ptr [int]`)
-				operations = append(operations, `  dec rcx`)
-				operations = append(operations, `  jnz `+label)
-
-				//
-				// Store the value
-				//
-				operations = append(operations, `fstp qword ptr [result]`)
-
-			}
+			// add the instruction
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Instruction: instructions.Power, Args: 2})
 
 		case token.SLASH:
 
-			// prevent division by zero.
-			if i == "0" {
-				return "", fmt.Errorf("Division by zero!")
-			}
-
-			// load the (current) result
-			operations = append(operations, `fld qword ptr [result]`)
-
-			// divide by the constant
-			constant := c.escapeConstant(i)
-			operations = append(operations, `fdiv qword ptr [`+constant+`]`)
-
-			// store back in the result store.
-			operations = append(operations, `fstp qword ptr [result]`)
+			// add the instruction
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Instruction: instructions.Divide, Args: 2})
 
 		case token.ASTERISK:
 
-			// load the (current) result
-			operations = append(operations, `fld qword ptr [result]`)
-
-			// multiply by the constant
-			constant := c.escapeConstant(i)
-			operations = append(operations, `fmul qword ptr [`+constant+`]`)
-
-			// store back in the result store.
-			operations = append(operations, `fstp qword ptr [result]`)
+			// add the instruction
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Instruction: instructions.Multiply, Args: 2})
 
 		case token.SIN:
-
-			// load the (current) result
-			operations = append(operations, `fld qword ptr [result]`)
-
-			// run the sin
-			operations = append(operations, `fsin`)
-
-			// store back in the result store.
-			operations = append(operations, `fstp qword ptr [result]`)
+			// add the instruction
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Instruction: instructions.Sin, Args: 1})
 
 		case token.TAN:
-
-			// load the (current) result
-			operations = append(operations, `fld qword ptr [result]`)
-
-			// run the tan, via a two-step operation
-			operations = append(operations, `fsincos`)
-			operations = append(operations, `fdivr %st(0), st(1)`)
-			// store back in the result store.
-			operations = append(operations, `fstp qword ptr [result]`)
+			// add the instruction
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Instruction: instructions.Tan, Args: 1})
 
 		case token.SQRT:
-
-			// load the (current) result
-			operations = append(operations, `fld qword ptr [result]`)
-
-			// run the square root
-			operations = append(operations, `fsqrt`)
-
-			// store back in the result store.
-			operations = append(operations, `fstp qword ptr [result]`)
+			// add the instruction
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Instruction: instructions.Sqrt, Args: 1})
 
 		case token.COS:
-			// load the (current) result
-			operations = append(operations, `fld qword ptr [result]`)
-
-			// run the cos
-			operations = append(operations, `fcos`)
-
-			// store back in the result store.
-			operations = append(operations, `fstp qword ptr [result]`)
+			// add the instruction
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Instruction: instructions.Cos, Args: 1})
 
 		default:
-			return "", fmt.Errorf("Invalid program - expected operator, but found %v\n", ent)
+			return "", fmt.Errorf("Invalid program - expected operator, but found %v\n", t)
 		}
 	}
 
 	//
-	// Now we have our starting number, and our list of operations
+	// Show what we've compiled.
 	//
-	// Create a structure to hold these such that we can populate
-	// our output-template.
-	//
-	type Assembly struct {
-		// The starting value.
-		Start string
-
-		// The operations we carry out.
-		Operations []string
-
-		// Any constants we load.
-		Constants []string
+	for _, v := range c.instructions {
+		fmt.Printf("Type: %c Argument-Count:%d Value:%s\n", v.Instruction, v.Args, v.Value)
 	}
-
-	//
-	// Create an instance of the output-structure, and populate it.
-	//
-	var out Assembly
-
-	//
-	// Starting value.
-	//
-	out.Start = start
-
-	//
-	// Assembly-language operations
-	//
-	out.Operations = operations
-
-	//
-	// The constants
-	//
-	for key, _ := range constants {
-		out.Constants = append(out.Constants, key)
-	}
-
-	//
-	// This is the template we'll output.
-	//
-	assembly := `
-.intel_syntax noprefix
-.global main
-
-# Data-section: Contains the format-string for our output message,
-#               the starting value, and any constants we use.
-.data
-result: .double {{.Start}}
-int: .double 0.0
-fmt:   .asciz "Result %g\n"
-{{range .Constants}}const_{{.}}: .double {{.}}
-{{end}}
-
-main:
-        push	rbp
-
-{{range .Operations}} {{.}}
-{{end}}
-
-        # print the result
-        lea rdi,fmt
-        movq rax, 1
-        movq xmm0, [result]
-        call printf
-
-        # clean and exit
-        pop	rbp
-        xor rax, rax
-        ret
-
-`
-
-	//
-	// Compile the template.
-	//
-	t := template.Must(template.New("tmpl").Parse(assembly))
-
-	//
-	// And now execute it, into a buffer.
-	//
-	buf := &bytes.Buffer{}
-	err := t.Execute(buf, out)
-	if err != nil {
-		return "", err
-	}
-
-	return buf.String(), nil
+	return "", nil
 
 }
 
