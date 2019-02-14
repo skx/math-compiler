@@ -23,6 +23,10 @@ const (
 	Cos  InstructionType = 'c'
 	Tan  InstructionType = 't'
 	Sqrt InstructionType = 'q'
+
+	// stack operations
+	Swap InstructionType = 'S'
+	Dupe InstructionType = 'D'
 )
 
 // A single instruction will have a thing to do, and optionally a value.
