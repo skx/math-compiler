@@ -115,7 +115,7 @@ debug the generated binary via `gdb`.
 
 For example you might generate a program "2 3 + 4 /" like so:
 
-    $ math-compiler  -compile -debug '2 3 + 4 /'
+    $ math-compiler -compile -debug '2 3 + 4 /'
 
 Now you can launch that binary under `gdb`, and run it:
 
@@ -139,7 +139,8 @@ Dissassemble the code via `disassemble`, and step over instructions one at a tim
        0x00000000006b20eb:	fstpl  0x6b2090
        0x00000000006b20f2:	mov    0x6b2090,%rax
        0x00000000006b20fa:	push   %rax
-       ..
+       ...
+       ...
 
 You can set a breakpoint at a line in the future, and continue running till
 you hit it, with something like this:
@@ -159,7 +160,8 @@ as the raw:
      st0            0.140652076786443369638	(raw 0x3ffc90071917a6263000)
      st1            0	(raw 0x00000000000000000000)
      st2            0	(raw 0x00000000000000000000)
-
+     ...
+     ...
 
 
 
