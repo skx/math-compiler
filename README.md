@@ -19,7 +19,7 @@ Despite this toy-functionality there is a lot going on, and we support:
 
 * Full RPN input
 * Floating-point numbers (i.e. one-third multipled by nine is 3)
-   * `1 3 / 9 *``
+   * `1 3 / 9 *`
 * Negative numbers work as you'd expect.
 
 
