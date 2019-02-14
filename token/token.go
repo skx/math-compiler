@@ -31,8 +31,6 @@ const (
 	SIN  = "sin"
 	SQRT = "sqrt"
 	TAN  = "tan"
-
-	// TAN = "tan" // todo / impossible?
 )
 
 // reversed keywords
@@ -40,7 +38,7 @@ var keywords = map[string]TokenType{
 	"cos":  COS,
 	"sin":  SIN,
 	"sqrt": SQRT,
-    "tan":  TAN,
+	"tan":  TAN,
 }
 
 // LookupIdentifier used to determinate whether identifier is keyword nor not
