@@ -23,6 +23,7 @@ package compiler
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/skx/math-compiler/instructions"
 	"github.com/skx/math-compiler/lexer"
@@ -34,6 +35,21 @@ type Compiler struct {
 
 	// expression holds the mathematical expression we're compiling.
 	expression string
+
+	//
+	// Constants we come across.
+	//
+	// Rather than placing the numbers in-line we're storing them
+	// in the constant area.  This gives us a level of indirection,
+	// but it simpler to reason about.
+	//
+	// Note that if we see "3 + 4 + 3 + 4" we only store each of
+	// the constants once each.  So we have a map here, key is the
+	// value of the constant, and `bool` to record that we found it.
+	//
+	// Later we'll output just the unique keys.
+	//
+	constants map[string]bool
 
 	// tokens holds the expression, broken down into a series of tokens.
 	//
@@ -47,16 +63,16 @@ type Compiler struct {
 
 // New creates a new compiler, given the expression in the constructor.
 func New(input string) *Compiler {
-	c := &Compiler{expression: input}
+	c := &Compiler{expression: input, constants: make(map[string]bool)}
 	return c
 }
 
-// Compiler populates our internal list of tokens, as a result of
+// Tokenize populates our internal list of tokens, as a result of
 // lexing the input string.
 //
 // There is some error-handling to ensure that the program looks
 // somewhat reasonable.
-func (c *Compiler) Compile() error {
+func (c *Compiler) Tokenize() error {
 
 	//
 	// Create the lexer, which will parse our expression.
@@ -115,9 +131,9 @@ func (c *Compiler) Compile() error {
 	return nil
 }
 
-// Output converts our series of tokens (i.e. the lexed expression) into
-// an assembly-language program.
-func (c *Compiler) Output() (string, error) {
+// InternalForm converts our series of tokens (i.e. the lexed expression) into
+// an an intermediary form, collecting constants as we go.
+func (c *Compiler) InternalForm() error {
 
 	//
 	// Walk our tokens.
@@ -126,6 +142,10 @@ func (c *Compiler) Output() (string, error) {
 
 		switch t.Type {
 		case token.NUMBER:
+
+			// Mark the constant as having been used.
+			// Record that this constant is set.
+			c.constants[t.Literal] = true
 
 			// add the instruction
 			c.instructions = append(c.instructions,
@@ -186,18 +206,107 @@ func (c *Compiler) Output() (string, error) {
 				instructions.Instruction{Instruction: instructions.Cos, Args: 1})
 
 		default:
-			return "", fmt.Errorf("Invalid program - expected operator, but found %v\n", t)
+			return fmt.Errorf("Invalid program - expected operator, but found %v\n", t)
 		}
 	}
 
-	//
-	// Show what we've compiled.
-	//
-	for _, v := range c.instructions {
-		fmt.Printf("Type: %c Argument-Count:%d Value:%s\n", v.Instruction, v.Args, v.Value)
-	}
-	return "", nil
+	return nil
 
+}
+
+// Output writes our program to stdout
+func (c *Compiler) Output() (string, error) {
+
+	//
+	// The header.
+	//
+	header := `
+.intel_syntax noprefix
+.global main
+
+# Data-section: Contains the format-string for our output message,
+#               etc.
+.data
+   int: .double 0.0
+   a: .double 0.0
+   b: .double 0.0
+   fmt:   .asciz "Result %g\n"
+`
+
+	//
+	// Add on the constants
+	//
+	for v, _ := range c.constants {
+		header += fmt.Sprintf("%s: .double %s\n",
+			c.escapeConstant(v), v)
+	}
+
+	header += `main:
+push rbp
+`
+
+	//
+	// The body of the program
+	//
+	body := ""
+
+	//
+	// Now we walk over our form.
+	//
+	for _, opr := range c.instructions {
+		switch opr.Instruction {
+
+		case instructions.Push:
+			body += fmt.Sprintf(`
+        fld qword ptr %s
+        fstp qword ptr [int]
+        mov rax, qword ptr [int]
+        push rax
+`, c.escapeConstant(opr.Value))
+
+		case instructions.Plus:
+			body += `
+        # now pop two values and add
+        pop rax
+        mov qword ptr [a], rax
+
+        pop rax
+        mov qword ptr [b], rax
+
+        # load + add
+        fld qword ptr [a]
+        fadd qword ptr  [b]
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+
+		}
+	}
+
+	footer := `
+        # print the result
+        lea rdi,fmt
+
+        # get the value to print in xmm0
+        pop rax
+        mov qword ptr [a], rax
+        movq xmm0, [a]
+
+        movq rax, 1
+
+
+        call printf
+
+        # clean and exit
+        pop	rbp
+        xor rax, rax
+        ret
+`
+
+	return header + body + footer, nil
 }
 
 // escapeConstant converts a floating-point number such as
@@ -213,8 +322,13 @@ func (c *Compiler) escapeConstant(input string) string {
 		fmt.Printf("%s\n", err.Error())
 	}
 
+	var val string
 	if s < 0 {
-		return fmt.Sprintf("const_neg_%s", input)
+		val = fmt.Sprintf("const_neg_%s", input)
+	} else {
+		val = fmt.Sprintf("const_%s", input)
 	}
-	return fmt.Sprintf("const_%s", input)
+
+	val = strings.Replace(val, ".", "_", -1)
+	return val
 }

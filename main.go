@@ -49,7 +49,7 @@ func main() {
 	// At this point there might be errors.  If so report them,
 	// and terminate.
 	//
-	err := comp.Compile()
+	err := comp.Tokenize()
 	if err != nil {
 		fmt.Printf("There was an error compiling the input expression:\n")
 		fmt.Printf("%s\n", err.Error())
@@ -57,7 +57,17 @@ func main() {
 	}
 
 	//
-	// Now generate a program from the expression.
+	// Convert the tokens to the internal form.
+	//
+	err = comp.InternalForm()
+	if err != nil {
+		fmt.Printf("Error generating internal form from program:\n")
+		fmt.Printf("%s\n", err.Error())
+		os.Exit(1)
+	}
+
+	//
+	// Now output
 	//
 	var out string
 	out, err = comp.Output()
