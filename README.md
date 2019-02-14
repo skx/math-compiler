@@ -1,6 +1,6 @@
 # math-compiler
 
-This project contains the simplest possible compiler, which converts simple mathematical operations into assembly language, allowing all the speed in your sums!
+This project contains the simplest possible compiler, which converts mathematical operations into assembly language, allowing all the speed in your sums!
 
 Because this is a simple project it provides only a small number of primitives:
 
@@ -15,7 +15,12 @@ Because this is a simple project it provides only a small number of primitives:
 * `tan`
 * `sqrt`
 
-Operations may return floating-point numbers, and negative numbers though, which is nice to see.
+Despite this toy-functionality there is a lot going on, and we support:
+
+* Full RPN input
+* Floating-point numbers (i.e. one-third multipled by nine is 3)
+   * `1 3 / 9 *`
+* Negative numbers work as you'd expect.
 
 
 # Installation
@@ -39,11 +44,10 @@ In theory this would allow me to compile things like this:
 
     2 + ( 4 * 54 )
 
-However I even simplified that, via the use of a "[Reverse Polish](https://en.wikipedia.org/wiki/Reverse_Polish_notation)"-like notation, so if you want to run that example you'd enter the expression as:
+However I even simplified that, via the use of a "[Reverse Polish](https://en.wikipedia.org/wiki/Reverse_Polish_notation)" notation, so if you want to run that example you'd enter the expression as:
 
     4 54 * 2 +
 
-(In our case we have no stack, so we just assume "operand ... operand operator", constantly.)
 
 
 
@@ -67,12 +71,12 @@ There you see:
 If you prefer you can also let the compiler do the heavy-lifting, and generate an executable for you directly.  Simply add `-compile`, and execute the generated `a.out` binary:
 
     $ math-compiler -compile=true '2 8 ^'
-    $ a.out
+    $ ./a.out
     Result 256
 
 Or to compile __and__ execute directly:
 
-    $ ./math-compiler -run '3 45 * 9 +  12 /'
+    $ math-compiler -run '3 45 * 9 + 12 /'
     Result 12
 
 
@@ -124,14 +128,14 @@ I believe that means we should be OK to store 64-bit numbers.
 
 ## Possible Expansion?
 
-The obvious thing to improve in this compiler is to add support for more floating-point operations.
-
-At the moment basic-support is present, allowing calcuations such as this to produce the correct result:
+The obvious thing to improve in this compiler is to add support for more floating-point operations.  At the moment basic-support is present, allowing calcuations such as this to produce the correct result:
 
 * `3 2 /`
   * Correctly returns `1.5`
 * `1 3 / 9 *`
   * Correctly returns 1/3 * 9 == `3`.
+* `81 sqrt sqrt`
+  * Correctly returns `root(root(81))`
 
 
 

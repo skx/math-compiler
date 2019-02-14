@@ -16,7 +16,7 @@ const (
 
 	// medium operators that work with stack-numbers
 	Power   InstructionType = '^'
-	Modulus InstructionType = '^'
+	Modulus InstructionType = '%'
 
 	// complex operators that work with stack-numbers
 	Sin  InstructionType = 's'

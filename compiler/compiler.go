@@ -278,23 +278,34 @@ push rbp
 `, c.escapeConstant(opr.Value))
 
 		case instructions.Plus:
-			body += `
-        # now pop two values and add
-        pop rax
-        mov qword ptr [a], rax
+			body += c.genPlus()
 
-        pop rax
-        mov qword ptr [b], rax
+		case instructions.Minus:
+			body += c.genMinus()
 
-        # load + add
-        fld qword ptr [a]
-        fadd qword ptr  [b]
-        fstp qword ptr [a]
+		case instructions.Multiply:
+			body += c.genMultiply()
 
-        # push result onto stack
-        mov rax, qword ptr [a]
-        push rax
-`
+		case instructions.Divide:
+			body += c.genDivide()
+
+		case instructions.Power:
+			body += c.genNop()
+
+		case instructions.Modulus:
+			body += c.genNop()
+
+		case instructions.Sin:
+			body += c.genSin()
+
+		case instructions.Cos:
+			body += c.genCos()
+
+		case instructions.Tan:
+			body += c.genTan()
+
+		case instructions.Sqrt:
+			body += c.genSqrt()
 
 		}
 	}
@@ -312,6 +323,19 @@ push rbp
 
 
         call printf
+
+        #
+        # If the user left rubbish on the stack then we could
+        # exit more cleanly via:
+        #
+        #   mov     rax, 1
+        #   xor     ebx, ebx
+        #   int     0x80
+        #
+        # Since that won't care about the broken return-address.
+        # That said I think we should probably assume the user knows
+        # their problem/program.
+        #
 
         # clean and exit
         pop	rbp
@@ -344,4 +368,154 @@ func (c *Compiler) escapeConstant(input string) string {
 
 	val = strings.Replace(val, ".", "_", -1)
 	return val
+}
+
+func (c *Compiler) genPlus() string {
+
+	return `
+        # pop two values
+        pop rax
+        mov qword ptr [a], rax
+        pop rax
+        mov qword ptr [b], rax
+
+        # add
+        fld qword ptr [a]
+        fadd qword ptr  [b]
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+
+}
+func (c *Compiler) genMinus() string {
+	return `
+        # pop two values
+        pop rax
+        mov qword ptr [a], rax
+        pop rax
+        mov qword ptr [b], rax
+
+        # sub
+        fld qword ptr [b]
+        fsub qword ptr  [a]
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+}
+func (c *Compiler) genMultiply() string {
+	return `
+        # pop two values
+        pop rax
+        mov qword ptr [a], rax
+        pop rax
+        mov qword ptr [b], rax
+
+        # multiply
+        fld qword ptr [a]
+        fmul qword ptr  [b]
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+
+}
+func (c *Compiler) genDivide() string {
+	return `
+        # pop two values
+        pop rax
+        mov qword ptr [a], rax
+        pop rax
+        mov qword ptr [b], rax
+
+        # divide
+        fld qword ptr [b]
+        fdiv qword ptr  [a]
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+
+}
+
+func (c *Compiler) genSqrt() string {
+	return `
+        # pop one value
+        pop rax
+        mov qword ptr [a], rax
+
+        # sqrt
+        fld qword ptr [a]
+        fsqrt
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+}
+
+func (c *Compiler) genSin() string {
+	return `
+        # pop one value
+        pop rax
+        mov qword ptr [a], rax
+
+        # sin
+        fld qword ptr [a]
+        fsin
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+}
+
+func (c *Compiler) genCos() string {
+	return `
+        # pop one value
+        pop rax
+        mov qword ptr [a], rax
+
+        # cos
+        fld qword ptr [a]
+        fcos
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+}
+
+func (c *Compiler) genTan() string {
+	return `
+        # pop one value
+        pop rax
+        mov qword ptr [a], rax
+
+        # tan
+        fld qword ptr [a]
+        fsincos
+        fdivr %st(0),st(1)
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+}
+
+func (c *Compiler) genNop() string {
+	return `push 3`
 }
