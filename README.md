@@ -116,7 +116,7 @@ If you run the compiler with the `-debug` flag a breakpoint will be generated
 immediately at the start of the program.  You can use that breakpoint to easily
 debug the generated binary via `gdb`.
 
-For example you might generate a program "2 3 + 4 /" like so:
+For example you might generate a program "`2 3 + 4 /`" like so:
 
     $ math-compiler -compile -debug '2 3 + 4 /'
 
@@ -151,13 +151,13 @@ you hit it, with something like this:
      (gdb) break *0x00000000006b20fa
      (gdb) cont
 
-Once there inspect the registers with commands like:
+Once there inspect the registers with commands like these two:
 
      (gdb) print $rax
      (gdb) info registers
 
-My favourite is this, which shows you the floating-point values as well
-as the raw:
+My favourite is `info registers float`, which shows you the floating-point
+values as well as the raw values:
 
      (gdb) info registers float
      st0            0.140652076786443369638	(raw 0x3ffc90071917a6263000)
@@ -166,7 +166,8 @@ as the raw:
      ...
      ...
 
-
+Further documentation can be found in the `gdb` manual, which is worth reading
+if you've an interest in compilers, debuggers, and decompilers.
 
 
 ## Possible Expansion?
