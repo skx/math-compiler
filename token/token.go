@@ -1,3 +1,5 @@
+// token package contains the tokens that the lexer will produce when
+// parsing an input-expression.
 package token
 
 // TokenType is a string
@@ -23,8 +25,8 @@ const (
 	SLASH    = "/"
 
 	// advanced operations
-	MOD   = "%" // todo
-	POWER = "^" // todo
+	MOD   = "%"
+	POWER = "^"
 
 	// complex operations
 	COS  = "cos"
