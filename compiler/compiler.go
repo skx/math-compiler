@@ -265,23 +265,34 @@ push rbp
 `, c.escapeConstant(opr.Value))
 
 		case instructions.Plus:
-			body += `
-        # now pop two values and add
-        pop rax
-        mov qword ptr [a], rax
+			body += c.genPlus()
 
-        pop rax
-        mov qword ptr [b], rax
+		case instructions.Minus:
+			body += c.genMinus()
 
-        # load + add
-        fld qword ptr [a]
-        fadd qword ptr  [b]
-        fstp qword ptr [a]
+		case instructions.Multiply:
+			body += c.genMultiply()
 
-        # push result onto stack
-        mov rax, qword ptr [a]
-        push rax
-`
+		case instructions.Divide:
+			body += c.genDivide()
+
+		case instructions.Power:
+			body += c.genNop()
+
+		case instructions.Modulus:
+			body += c.genNop()
+
+		case instructions.Sin:
+			body += c.genNop()
+
+		case instructions.Cos:
+			body += c.genNop()
+
+		case instructions.Tan:
+			body += c.genNop()
+
+		case instructions.Sqrt:
+			body += c.genNop()
 
 		}
 	}
@@ -331,4 +342,85 @@ func (c *Compiler) escapeConstant(input string) string {
 
 	val = strings.Replace(val, ".", "_", -1)
 	return val
+}
+
+func (c *Compiler) genPlus() string {
+
+	return `
+        # pop two values
+        pop rax
+        mov qword ptr [a], rax
+        pop rax
+        mov qword ptr [b], rax
+
+        # add
+        fld qword ptr [a]
+        fadd qword ptr  [b]
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+
+}
+func (c *Compiler) genMinus() string {
+	return `
+        # pop two values
+        pop rax
+        mov qword ptr [a], rax
+        pop rax
+        mov qword ptr [b], rax
+
+        # sub
+        fld qword ptr [b]
+        fsub qword ptr  [a]
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+}
+func (c *Compiler) genMultiply() string {
+	return `
+        # pop two values
+        pop rax
+        mov qword ptr [a], rax
+        pop rax
+        mov qword ptr [b], rax
+
+        # multiply
+        fld qword ptr [a]
+        fmul qword ptr  [b]
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+
+}
+func (c *Compiler) genDivide() string {
+	return `
+        # pop two values
+        pop rax
+        mov qword ptr [a], rax
+        pop rax
+        mov qword ptr [b], rax
+
+        # divide
+        fld qword ptr [b]
+        fdiv qword ptr  [a]
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+
+}
+
+func (c *Compiler) genNop() string {
+	return ``
 }
