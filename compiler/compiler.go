@@ -293,7 +293,7 @@ push rbp
 			body += c.genNop()
 
 		case instructions.Modulus:
-			body += c.genNop()
+			body += c.genModulus()
 
 		case instructions.Sin:
 			body += c.genSin()
@@ -427,6 +427,42 @@ func (c *Compiler) genMultiply() string {
 `
 
 }
+
+// genModulus generates assembly code to pop two values from the stack,
+// perform a modulus-operation and store the result back on the stack.
+// Note we truncate things to integers in this section of the code.
+func (c *Compiler) genModulus() string {
+	return `
+
+        # pop two values - rounding both to ints
+        pop rax
+        mov qword ptr [a], rax
+        fld qword ptr [a]
+        frndint
+        fistp qword ptr [a]
+
+        pop rax
+        mov qword ptr [b], rax
+        fld qword ptr [b]
+        frndint
+        fistp qword ptr [b]
+
+        # now we do the modulus-magic.
+        mov rax, qword ptr [b]
+        mov rbx, qword ptr [a]
+        xor rdx, rdx
+        cqo
+        div rbx
+
+        # store the result from 'rdx'.
+        mov qword ptr[a], rdx
+        fild qword ptr [a]
+        fstp qword ptr [a]
+        mov rax, qword ptr [a]
+        push rax
+`
+}
+
 func (c *Compiler) genDivide() string {
 	return `
         # pop two values
