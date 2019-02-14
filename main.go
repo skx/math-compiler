@@ -1,5 +1,4 @@
 // This is the main-driver for our compiler.
-//
 
 package main
 
@@ -62,17 +61,12 @@ func main() {
 	}
 
 	//
-	// Convert the tokens to the internal form.
+	// Convert the tokens to their internal form.
 	//
-	err = comp.InternalForm()
-	if err != nil {
-		fmt.Printf("Error generating internal form from program:\n")
-		fmt.Printf("%s\n", err.Error())
-		os.Exit(1)
-	}
+	comp.InternalForm()
 
 	//
-	// Now output
+	// Now generate the output assembly
 	//
 	var out string
 	out, err = comp.Output()
@@ -83,7 +77,7 @@ func main() {
 	}
 
 	//
-	// If we're not compiling then we just write that to STDOUT.
+	// If we're not compiling then we just write the program to STDOUT.
 	//
 	if *compile == false {
 		fmt.Printf("%s", out)

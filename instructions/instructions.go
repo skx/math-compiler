@@ -25,10 +25,14 @@ const (
 	Sqrt InstructionType = 'q'
 )
 
-// A single instruction will have a thing to do, and the number
-// of items to pop from the stack.
+// A single instruction will have a thing to do, and optionally a value.
+//
+// (The value is only used when a float is to be pushed upon the stack.)
 type Instruction struct {
-	Instruction InstructionType
-	Args        int
-	Value       string
+
+	// The type of instruction this object represents
+	Type InstructionType
+
+	// Value holds the  value of a number to be pushed upon the RPN stack.
+	Value string
 }

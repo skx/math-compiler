@@ -45,13 +45,29 @@ func TestValidPrograms(t *testing.T) {
 		"9 3 /",
 		"10 5 %",
 		"2 8 ^",
+		"3 sin",
+		"4 cos",
+		"5 tan",
+		"10 sqrt",
 	}
 
 	for _, test := range tests {
+
 		c := New(test)
+
+		// tokenize
 		err := c.Tokenize()
 		if err != nil {
-			t.Errorf("We didn't expect an error compiling a valid program, but found one %s", err.Error())
+			t.Errorf("We didn't expect an error tokenizing a valid program, but found one %s", err.Error())
+		}
+
+		// convert to internal form
+		c.InternalForm()
+
+		// output the text
+		_, err = c.Output()
+		if err != nil {
+			t.Errorf("We didn't expect an error generating our assembly %s", err.Error())
 		}
 	}
 }
@@ -109,10 +125,16 @@ func TestValidOutput(t *testing.T) {
 	}
 }
 
+// TestFakeCoverage just calls the various generating methods, to ensure
+// they're covered.  Since there is no logic in them testing them is pretty
+// pointless.
 func TestFakeCoverage(t *testing.T) {
 
 	// create
 	c := New("2 3+")
+
+	// misc
+	c.genPush("3.4")
 
 	// simple
 	c.genPlus()
@@ -121,8 +143,38 @@ func TestFakeCoverage(t *testing.T) {
 	c.genDivide()
 
 	// misc
+	c.genModulus()
+	c.genPower(1)
+
+	// complex
 	c.genCos()
 	c.genSin()
 	c.genSqrt()
 	c.genTan()
+}
+
+// TestEscape tests excaping numbers to constants
+func TestEscape(t *testing.T) {
+
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"3", "const_3"},
+		{"0.03", "const_0_03"},
+		{"-3", "const_neg_3"},
+		{"-3.3", "const_neg_3_3"},
+	}
+
+	for _, text := range tests {
+
+		c := New("")
+
+		got := c.escapeConstant(text.input)
+
+		if got != text.expected {
+			t.Errorf("Expected '%s' to become '%s', got '%s'",
+				text.input, text.expected, got)
+		}
+	}
 }

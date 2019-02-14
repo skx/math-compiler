@@ -1,18 +1,19 @@
 // compiler contains our simple compiler.
 //
-// In brief it uses the lexer to tokenize the expression, and outputs
-// a simple assembly language program.
+// In brief it uses the lexer to tokenize the expression, then we convert
+// that series of tokens into an "internal representation" which is pretty
+// much things like:
 //
-// There are only two minor complications:
+//    push_int 3
+//    push_int 4
+//    Add
 //
-//  1.  We store all the input-floats in the data-area of the program.
-//      These require escaping for uniqueness purposes.
+// We iterate over this simple representation and output a block of code
+// for each.
 //
-//  2.  We output different instructions based on the operator.
-//
-//  we could do better with an intermediary form, concatenating small
-// segments of code, and avoiding the frequent loads from the `result`
-// location.
+// There are only one minor complication - storing all the input-floats
+// in the data-area of the program.  These require escaping for uniqueness
+// purposes, and to avoid issues with the assembling.
 //
 // That said this is a toy, and will remain a toy, so I can live with
 // these problems.
@@ -141,85 +142,83 @@ func (c *Compiler) Tokenize() error {
 }
 
 // InternalForm converts our series of tokens (i.e. the lexed expression) into
-// an an intermediary form, collecting constants as we go.
-func (c *Compiler) InternalForm() error {
+// an an intermediary form, collecting constants as they are discovered.
+//
+// This is the middle-step before generating our assembly-language program.
+func (c *Compiler) InternalForm() {
 
 	//
 	// Walk our tokens.
 	//
 	for _, t := range c.tokens {
 
+		//
+		// Handle each kind.
+		//
 		switch t.Type {
+
+		case token.ASTERISK:
+
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Type: instructions.Multiply})
+
+		case token.COS:
+
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Type: instructions.Cos})
+
 		case token.NUMBER:
 
 			// Mark the constant as having been used.
-			// Record that this constant is set.
 			c.constants[t.Literal] = true
 
 			// add the instruction
 			c.instructions = append(c.instructions,
-				instructions.Instruction{Instruction: instructions.Push, Value: t.Literal})
-
-		case token.PLUS:
-			// add the instruction
-			c.instructions = append(c.instructions,
-				instructions.Instruction{Instruction: instructions.Plus, Args: 2})
+				instructions.Instruction{Type: instructions.Push, Value: t.Literal})
 
 		case token.MOD:
-			// add the instruction
+
 			c.instructions = append(c.instructions,
-				instructions.Instruction{Instruction: instructions.Modulus, Args: 2})
+				instructions.Instruction{Type: instructions.Modulus})
 
 		case token.MINUS:
 
-			// add the instruction
 			c.instructions = append(c.instructions,
-				instructions.Instruction{Instruction: instructions.Minus, Args: 2})
+				instructions.Instruction{Type: instructions.Minus})
+
+		case token.PLUS:
+
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Type: instructions.Plus})
 
 		case token.POWER:
 
 			// add the instruction
 			c.instructions = append(c.instructions,
-				instructions.Instruction{Instruction: instructions.Power, Args: 2})
+				instructions.Instruction{Type: instructions.Power})
+
+		case token.SIN:
+
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Type: instructions.Sin})
 
 		case token.SLASH:
 
-			// add the instruction
 			c.instructions = append(c.instructions,
-				instructions.Instruction{Instruction: instructions.Divide, Args: 2})
-
-		case token.ASTERISK:
-
-			// add the instruction
-			c.instructions = append(c.instructions,
-				instructions.Instruction{Instruction: instructions.Multiply, Args: 2})
-
-		case token.SIN:
-			// add the instruction
-			c.instructions = append(c.instructions,
-				instructions.Instruction{Instruction: instructions.Sin, Args: 1})
-
-		case token.TAN:
-			// add the instruction
-			c.instructions = append(c.instructions,
-				instructions.Instruction{Instruction: instructions.Tan, Args: 1})
+				instructions.Instruction{Type: instructions.Divide})
 
 		case token.SQRT:
-			// add the instruction
-			c.instructions = append(c.instructions,
-				instructions.Instruction{Instruction: instructions.Sqrt, Args: 1})
 
-		case token.COS:
-			// add the instruction
 			c.instructions = append(c.instructions,
-				instructions.Instruction{Instruction: instructions.Cos, Args: 1})
+				instructions.Instruction{Type: instructions.Sqrt})
 
-		default:
-			return fmt.Errorf("Invalid program - expected operator, but found %v\n", t)
+		case token.TAN:
+
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Type: instructions.Tan})
+
 		}
 	}
-
-	return nil
 
 }
 
@@ -253,7 +252,6 @@ func (c *Compiler) Output() (string, error) {
 	header += `main:
 push rbp
 `
-
 	if c.debug {
 		header += "int 03\n"
 	}
@@ -264,19 +262,18 @@ push rbp
 	body := ""
 
 	//
-	// Now we walk over our internal-form, and
-	// generate blocks of code for each logical instruction.
+	// Now we walk over our form.
 	//
 	for i, opr := range c.instructions {
-		switch opr.Instruction {
+
+		//
+		// We'll output a different chunk of asm for each
+		// of our instructions.
+		//
+		switch opr.Type {
 
 		case instructions.Push:
-			body += fmt.Sprintf(`
-        fld qword ptr %s
-        fstp qword ptr [int]
-        mov rax, qword ptr [int]
-        push rax
-`, c.escapeConstant(opr.Value))
+			body += c.genPush(opr.Value)
 
 		case instructions.Plus:
 			body += c.genPlus()
@@ -314,15 +311,12 @@ push rbp
 	footer := `
         # print the result
         lea rdi,fmt
-
         # get the value to print in xmm0
         pop rax
         mov qword ptr [a], rax
         movq xmm0, [a]
-
+        # one argument
         movq rax, 1
-
-
         call printf
 
         #
@@ -367,10 +361,28 @@ func (c *Compiler) escapeConstant(input string) string {
 		val = fmt.Sprintf("const_%s", input)
 	}
 
+	// remove periods
 	val = strings.Replace(val, ".", "_", -1)
+	// remove minus-signs
+	val = strings.Replace(val, "-", "", -1)
 	return val
 }
 
+// genPush generates assembly code to push a value upon the RPN stack.
+func (c *Compiler) genPush(value string) string {
+
+	text := `
+        fld qword ptr #VAL
+        fstp qword ptr [int]
+        mov rax, qword ptr [int]
+        push rax
+`
+
+	return (strings.Replace(text, "#VAL", c.escapeConstant(value), -1))
+}
+
+// genPlus generates assembly code to pop two values from the stack,
+// add them and store the result back on the stack.
 func (c *Compiler) genPlus() string {
 
 	return `
@@ -385,12 +397,14 @@ func (c *Compiler) genPlus() string {
         fadd qword ptr  [b]
         fstp qword ptr [a]
 
-        # push result onto stack
+        # push the result back onto the stack
         mov rax, qword ptr [a]
         push rax
 `
-
 }
+
+// genMinus generates assembly code to pop two values from the stack,
+// subtract them and store the result back on the stack.
 func (c *Compiler) genMinus() string {
 	return `
         # pop two values
@@ -404,11 +418,14 @@ func (c *Compiler) genMinus() string {
         fsub qword ptr  [a]
         fstp qword ptr [a]
 
-        # push result onto stack
+        # push the result back onto the stack
         mov rax, qword ptr [a]
         push rax
 `
 }
+
+// genMultiply generates assembly code to pop two values from the stack,
+// multiply them and store the result back on the stack.
 func (c *Compiler) genMultiply() string {
 	return `
         # pop two values
@@ -422,7 +439,7 @@ func (c *Compiler) genMultiply() string {
         fmul qword ptr  [b]
         fstp qword ptr [a]
 
-        # push result onto stack
+        # push the result back onto the stack
         mov rax, qword ptr [a]
         push rax
 `
@@ -464,6 +481,8 @@ func (c *Compiler) genModulus() string {
 `
 }
 
+// genDivide generates assembly code to pop two values from the stack,
+// divide them and store the result back on the stack.
 func (c *Compiler) genDivide() string {
 	return `
         # pop two values
@@ -477,13 +496,15 @@ func (c *Compiler) genDivide() string {
         fdiv qword ptr  [a]
         fstp qword ptr [a]
 
-        # push result onto stack
+        # push the result back onto the stack
         mov rax, qword ptr [a]
         push rax
 `
 
 }
 
+// genSqrt generates assembly code to pop a value from the stack,
+// run a square-root operation, and store the result back on the stack.
 func (c *Compiler) genSqrt() string {
 	return `
         # pop one value
@@ -501,6 +522,8 @@ func (c *Compiler) genSqrt() string {
 `
 }
 
+// genSin generates assembly code to pop a value from the stack,
+// run a sin-operation, and store the result back on the stack.
 func (c *Compiler) genSin() string {
 	return `
         # pop one value
@@ -518,6 +541,8 @@ func (c *Compiler) genSin() string {
 `
 }
 
+// genCos generates assembly code to pop a value from the stack,
+// run a cos-operation, and store the result back on the stack.
 func (c *Compiler) genCos() string {
 	return `
         # pop one value
@@ -535,6 +560,8 @@ func (c *Compiler) genCos() string {
 `
 }
 
+// genTan generates assembly code to pop a value from the stack,
+// run a tan-operation, and store the result back on the stack.
 func (c *Compiler) genTan() string {
 	return `
         # pop one value
