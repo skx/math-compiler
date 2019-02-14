@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Simple test-driver to exercise our compiler.
 #
@@ -11,18 +11,27 @@
 test_compile() {
     input="$1"
     result="$2"
+    full="$3"
 
     #
     # Do this the long way round so we have assembly file for
     # inspection if/when a test fails.
     #
+    rm -f test.s test || true
     go run main.go "${input}" > test.s
     gcc -static -o ./test test.s
 
     #
     # Run the test.
     #
-    out=$(./test  | awk '{print $NF}')
+    out=`./test`
+
+    #
+    # If we're not doing a "full" match we only take the last token
+    #
+    if [ "${full}" = "" ]; then
+        out=$(echo "$out" | awk '{print $NF}')
+    fi
 
     if [ "${result}" = "${out}" ]; then
         echo "Expected output found for '$input' [$result] "
@@ -35,12 +44,15 @@ test_compile() {
 }
 
 
-
 # Simple operations
 test_compile '1 2 3 4 + + +' 10
 test_compile '3 4 5 * *'     60
 test_compile '20 10 2 - -'   12
 test_compile '20 4 2 / / '   10
+
+# Division by zero
+test_compile '3 4 /' '0.75'
+test_compile '3 0 /' 'Attempted division by zero.  Aborting' 'full'
 
 # modulus
 test_compile  '1 4 %' 1

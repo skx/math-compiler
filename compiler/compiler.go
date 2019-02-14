@@ -245,10 +245,11 @@ func (c *Compiler) Output() (string, error) {
 # Data-section: Contains the format-string for our output message,
 #               etc.
 .data
-   int: .double 0.0
-   a: .double 0.0
-   b: .double 0.0
-   fmt:   .asciz "Result %g\n"
+        int: .double 0.0
+          a: .double 0.0
+          b: .double 0.0
+        fmt: .asciz "Result %g\n"
+   div_zero: .asciz "Attempted division by zero.  Aborting\n"
 `
 
 	//
@@ -352,6 +353,12 @@ push rbp
         pop	rbp
         xor rax, rax
         ret
+
+division_by_zero:
+        lea rdi,div_zero
+        xor rax, rax
+        call printf
+        call exit
 `
 
 	return header + body + footer, nil
@@ -503,6 +510,8 @@ func (c *Compiler) genDivide() string {
 	return `
         # pop two values
         pop rax
+        cmp rax,0
+        je division_by_zero
         mov qword ptr [a], rax
         pop rax
         mov qword ptr [b], rax
