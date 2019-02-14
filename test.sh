@@ -106,4 +106,12 @@ test_compile '1 sin' 0.841471
 test_compile '1 cos' 0.540302
 test_compile '1 tan' 1.55741
 
+# swap
+test_compile '3 5 -' -2
+test_compile '3 5 swap -' 2
+
+# dup
+test_compile '3 sqrt dup *' 3
+test_compile '3 dup ^' 27
+
 exit 0
