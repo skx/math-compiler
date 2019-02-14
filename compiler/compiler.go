@@ -311,6 +311,19 @@ push rbp
 
         call printf
 
+        #
+        # If the user left rubbish on the stack then we could
+        # exit more cleanly via:
+        #
+        #   mov     rax, 1
+        #   xor     ebx, ebx
+        #   int     0x80
+        #
+        # Since that won't care about the broken return-address.
+        # That said I think we should probably assume the user knows
+        # their problem/program.
+        #
+
         # clean and exit
         pop	rbp
         xor rax, rax
@@ -422,5 +435,5 @@ func (c *Compiler) genDivide() string {
 }
 
 func (c *Compiler) genNop() string {
-	return ``
+	return `push 3`
 }
