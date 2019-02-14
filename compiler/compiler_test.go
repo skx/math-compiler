@@ -28,7 +28,7 @@ func TestBogusInput(t *testing.T) {
 
 	for _, test := range tests {
 		c := New(test)
-		err := c.Compile()
+		err := c.Tokenize()
 		if err == nil {
 			t.Errorf("We expected an error handling '%s', but got none!", test)
 		}
@@ -49,9 +49,9 @@ func TestValidPrograms(t *testing.T) {
 
 	for _, test := range tests {
 		c := New(test)
-		err := c.Compile()
+		err := c.Tokenize()
 		if err != nil {
-			t.Errorf("We didn't expect an error compiling a vlid program, but found one %s", err.Error())
+			t.Errorf("We didn't expect an error compiling a valid program, but found one %s", err.Error())
 		}
 	}
 }
@@ -90,7 +90,7 @@ func TestValidOutput(t *testing.T) {
 		c := New(test)
 
 		// compile
-		err := c.Compile()
+		err := c.Tokenize()
 		if err != nil {
 			t.Errorf("We didn't expect an error compiling a valid program, but found one %s", err.Error())
 		}
@@ -109,36 +109,20 @@ func TestValidOutput(t *testing.T) {
 	}
 }
 
-// Test actually outputing some invalid programs.
-//
-// This test covers the full range:
-//   "parse".
-//   "compile".
-//   "output".
-//
-func TestInvalidOutput(t *testing.T) {
+func TestFakeCoverage(t *testing.T) {
 
-	tests := []string{
-		"3 0 /",
-		"3 3.3 %",
-		"2 3.4 ^",
-	}
+	// create
+	c := New("2 3+")
 
-	for _, test := range tests {
+	// simple
+	c.genPlus()
+	c.genMinus()
+	c.genMultiply()
+	c.genDivide()
 
-		// create
-		c := New(test)
-
-		// compile
-		err := c.Compile()
-		if err != nil {
-			t.Errorf("We didn't expect an error compiling an invalid program, but found one %s", err.Error())
-		}
-
-		// output
-		_, err = c.Output()
-		if err == nil {
-			t.Errorf("We expected an error outputing an invalid program, but found none")
-		}
-	}
+	// misc
+	c.genCos()
+	c.genSin()
+	c.genSqrt()
+	c.genTan()
 }
