@@ -283,16 +283,16 @@ push rbp
 			body += c.genNop()
 
 		case instructions.Sin:
-			body += c.genNop()
+			body += c.genSin()
 
 		case instructions.Cos:
-			body += c.genNop()
+			body += c.genCos()
 
 		case instructions.Tan:
-			body += c.genNop()
+			body += c.genTan()
 
 		case instructions.Sqrt:
-			body += c.genNop()
+			body += c.genSqrt()
 
 		}
 	}
@@ -432,6 +432,75 @@ func (c *Compiler) genDivide() string {
         push rax
 `
 
+}
+
+func (c *Compiler) genSqrt() string {
+	return `
+        # pop one value
+        pop rax
+        mov qword ptr [a], rax
+
+        # sqrt
+        fld qword ptr [a]
+        fsqrt
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+}
+
+func (c *Compiler) genSin() string {
+	return `
+        # pop one value
+        pop rax
+        mov qword ptr [a], rax
+
+        # sin
+        fld qword ptr [a]
+        fsin
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+}
+
+func (c *Compiler) genCos() string {
+	return `
+        # pop one value
+        pop rax
+        mov qword ptr [a], rax
+
+        # cos
+        fld qword ptr [a]
+        fcos
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+}
+
+func (c *Compiler) genTan() string {
+	return `
+        # pop one value
+        pop rax
+        mov qword ptr [a], rax
+
+        # tan
+        fld qword ptr [a]
+        fsincos
+        fdivr %st(0),st(1)
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
 }
 
 func (c *Compiler) genNop() string {
