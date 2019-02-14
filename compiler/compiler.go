@@ -167,6 +167,11 @@ func (c *Compiler) InternalForm() {
 			c.instructions = append(c.instructions,
 				instructions.Instruction{Type: instructions.Cos})
 
+		case token.DUP:
+
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Type: instructions.Dup})
+
 		case token.NUMBER:
 
 			// Mark the constant as having been used.
@@ -211,6 +216,11 @@ func (c *Compiler) InternalForm() {
 
 			c.instructions = append(c.instructions,
 				instructions.Instruction{Type: instructions.Sqrt})
+
+		case token.SWAP:
+
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Type: instructions.Swap})
 
 		case token.TAN:
 
@@ -272,38 +282,44 @@ push rbp
 		//
 		switch opr.Type {
 
-		case instructions.Push:
-			body += c.genPush(opr.Value)
-
-		case instructions.Plus:
-			body += c.genPlus()
-
-		case instructions.Minus:
-			body += c.genMinus()
-
-		case instructions.Multiply:
-			body += c.genMultiply()
+		case instructions.Cos:
+			body += c.genCos()
 
 		case instructions.Divide:
 			body += c.genDivide()
 
-		case instructions.Power:
-			body += c.genPower(i)
+		case instructions.Dup:
+			body += c.genDup()
+
+		case instructions.Minus:
+			body += c.genMinus()
 
 		case instructions.Modulus:
 			body += c.genModulus()
 
+		case instructions.Multiply:
+			body += c.genMultiply()
+
+		case instructions.Plus:
+			body += c.genPlus()
+
+		case instructions.Power:
+			body += c.genPower(i)
+
+		case instructions.Push:
+			body += c.genPush(opr.Value)
+
 		case instructions.Sin:
 			body += c.genSin()
 
-		case instructions.Cos:
-			body += c.genCos()
+		case instructions.Sqrt:
+			body += c.genSqrt()
+
+		case instructions.Swap:
+			body += c.genSwap()
 
 		case instructions.Tan:
 			body += c.genTan()
-
-		case instructions.Sqrt:
-			body += c.genSqrt()
 
 		}
 	}
@@ -503,6 +519,16 @@ func (c *Compiler) genDivide() string {
 
 }
 
+// genDup generates assembly code to pop a value from the stack and
+// push it back twice - effectively duplicating it.
+func (c *Compiler) genDup() string {
+	return `
+        pop rax
+        push rax
+        push rax
+`
+}
+
 // genSqrt generates assembly code to pop a value from the stack,
 // run a square-root operation, and store the result back on the stack.
 func (c *Compiler) genSqrt() string {
@@ -538,6 +564,17 @@ func (c *Compiler) genSin() string {
         # push result onto stack
         mov rax, qword ptr [a]
         push rax
+`
+}
+
+// genSwap generates assembly code to pop two values from the stack and
+// push them back, in the other order.
+func (c *Compiler) genSwap() string {
+	return `
+        pop rax
+        pop rbx
+        push rax
+        push rbx
 `
 }
 
