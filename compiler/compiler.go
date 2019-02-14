@@ -33,6 +33,10 @@ import (
 // Compiler holds our object-state.
 type Compiler struct {
 
+	// debug holds a flag to decide if debugging "stuff" is generated
+	// in the output assembly.
+	debug bool
+
 	// expression holds the mathematical expression we're compiling.
 	expression string
 
@@ -63,8 +67,13 @@ type Compiler struct {
 
 // New creates a new compiler, given the expression in the constructor.
 func New(input string) *Compiler {
-	c := &Compiler{expression: input, constants: make(map[string]bool)}
+	c := &Compiler{expression: input, constants: make(map[string]bool), debug: false}
 	return c
+}
+
+// SetDebug changes the debug-flag for our output.
+func (c *Compiler) SetDebug(val bool) {
+	c.debug = val
 }
 
 // Tokenize populates our internal list of tokens, as a result of
@@ -244,6 +253,10 @@ func (c *Compiler) Output() (string, error) {
 	header += `main:
 push rbp
 `
+
+	if c.debug {
+		header += "int 03\n"
+	}
 
 	//
 	// The body of the program

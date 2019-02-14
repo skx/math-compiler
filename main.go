@@ -18,6 +18,7 @@ func main() {
 	//
 	// Look for flags.
 	//
+	debug := flag.Bool("debug", false, "Insert debug \"stuff\" in our generated output.")
 	compile := flag.Bool("compile", false, "Compile the program, via invoking gcc.")
 	program := flag.String("filename", "a.out", "The program to write to.")
 	run := flag.Bool("run", false, "Run the binary, post-compile.")
@@ -42,6 +43,10 @@ func main() {
 	// Create a compiler-object, with the program as input.
 	//
 	comp := compiler.New(flag.Args()[0])
+
+	if *debug {
+		comp.SetDebug(true)
+	}
 
 	//
 	// Parse the program into a series of statements, etc.
