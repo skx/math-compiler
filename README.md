@@ -15,8 +15,8 @@ Because this is a simple project it provides only a small number of primitives:
 * `tan`
 * `sqrt`
 * Stack operations:
- * `swap` - Swap the top-two items on the stack
- * `dup` - Duplicate the topmost stack-entry.
+  * `swap` - Swap the top-two items on the stack
+  * `dup` - Duplicate the topmost stack-entry.
 
 Despite this toy-functionality there is a lot going on, and we support:
 
