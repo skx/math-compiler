@@ -77,17 +77,17 @@ test_compile "$inp" 1.67772e+07
 
 
 # powers of two - the simple way
-#test_compile '2 0 ^'           0
-#test_compile '2 1 ^'           2
-#test_compile '2 2 ^'           4
-#test_compile '2 3 ^'           8
-#test_compile '2 4 ^'          16
-#test_compile '2 5 ^'          32
-#test_compile '2 6 ^'          64
-#test_compile '2 7 ^'         128
-#test_compile '2 8 ^'         256
-#test_compile '2 16 ^'      65536
-#test_compile '2 30 ^' 1.07374e+09
+test_compile '2 0 ^'           0
+test_compile '2 1 ^'           2
+test_compile '2 2 ^'           4
+test_compile '2 3 ^'           8
+test_compile '2 4 ^'          16
+test_compile '2 5 ^'          32
+test_compile '2 6 ^'          64
+test_compile '2 7 ^'         128
+test_compile '2 8 ^'         256
+test_compile '2 16 ^'      65536
+test_compile '2 30 ^' 1.07374e+09
 
 
 # division

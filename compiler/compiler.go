@@ -264,9 +264,10 @@ push rbp
 	body := ""
 
 	//
-	// Now we walk over our form.
+	// Now we walk over our internal-form, and
+	// generate blocks of code for each logical instruction.
 	//
-	for _, opr := range c.instructions {
+	for i, opr := range c.instructions {
 		switch opr.Instruction {
 
 		case instructions.Push:
@@ -290,7 +291,7 @@ push rbp
 			body += c.genDivide()
 
 		case instructions.Power:
-			body += c.genNop()
+			body += c.genPower(i)
 
 		case instructions.Modulus:
 			body += c.genModulus()
@@ -552,6 +553,73 @@ func (c *Compiler) genTan() string {
 `
 }
 
-func (c *Compiler) genNop() string {
-	return `push 3`
+// genPower generates assembly code to pop two values from the stack,
+// perform a power-raising and store the result back on the stack.
+//
+// Note we truncate things to integers in this section of the code.
+//
+// Note we do some comparisions here, and need to generate some (unique) labels
+//
+func (c *Compiler) genPower(i int) string {
+	text := `
+
+        # pop two values - rounding both to ints
+        pop rax
+        mov qword ptr [a], rax
+        fld qword ptr [a]
+        frndint
+        fistp qword ptr [a]
+
+        pop rax
+        mov qword ptr [b], rax
+        fld qword ptr [b]
+        frndint
+        fistp qword ptr [b]
+
+        # get the two values
+        mov rax, qword ptr [b]
+        mov rbx, qword ptr [a]
+
+        # if the power is 0 we return zero
+        cmp rbx, 0
+        jne none_zero_#ID
+           # store zero
+           fldz
+           jmp store_value_#ID
+
+none_zero_#ID:
+
+        # if the power is 1 we return the original value
+        cmp rbx, 1
+        jne none_one_#ID
+           mov qword ptr[a], rax
+           fild qword ptr [a]
+           jmp store_value_#ID
+
+none_one_#ID:
+        # here we have rax having a value
+        # and we have rbx having the power to raise
+        mov rcx, rax   # save the value
+
+        # decrease the power by one.
+        dec rbx
+again_#ID:
+           # rax = rax * rcx (which is the original value we started with)
+           imul rax,rcx
+           dec rbx
+           jnz again_#ID
+
+        mov qword ptr[a], rax
+        fild qword ptr [a]
+
+store_value_#ID:
+
+        fstp qword ptr [a]
+
+        # push the result back onto the stack
+        mov rax, qword ptr [a]
+        push rax
+`
+
+	return (strings.Replace(text, "#ID", fmt.Sprintf("%d", i), -1))
 }
