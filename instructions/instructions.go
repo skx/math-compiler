@@ -26,7 +26,7 @@ const (
 
 	// stack operations
 	Swap InstructionType = 'S'
-	Dupe InstructionType = 'D'
+	Dup  InstructionType = 'D'
 )
 
 // A single instruction will have a thing to do, and optionally a value.
