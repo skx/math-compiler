@@ -151,6 +151,10 @@ func TestFakeCoverage(t *testing.T) {
 	c.genSin()
 	c.genSqrt()
 	c.genTan()
+
+	// stack
+	c.genDup()
+	c.genSwap()
 }
 
 // TestEscape tests excaping numbers to constants
