@@ -80,8 +80,6 @@ Or to compile __and__ execute directly:
     Result 12
 
 
-
-
 ## Test Cases
 
 The codebase itself contains some simple test-cases, however these are not comprehensive as a large part of our operation is merely to populate a simple template-file, and it is hard to test that.
@@ -109,20 +107,60 @@ they produce the correct result.
 
 
 
-## Numerical Limits
+### Debugging the generated programs
 
-I try to use full-width instructions where possible.
+If you run the compiler with the `-debug` flag a breakpoint will be generated
+immediately at the start of the program.  You can use that breakpoint to easily
+debug the generated binary via `gdb`.
 
-As you can see the registers can store a different number of bits, depending on how much you access:
+For example you might generate a program "2 3 + 4 /" like so:
 
-     0x1122334455667788
-     ================ rax (64 bits)
-             ======== eax (32 bits)
-                 ====  ax (16 bits)
-                   ==  ah (8 bits)
-                   ==  al (8 bits)
+    $ math-compiler  -compile -debug '2 3 + 4 /'
 
-I believe that means we should be OK to store 64-bit numbers.
+Now you can launch that binary under `gdb`, and run it:
+
+    $ gdb ./a.out
+    (gdb) run
+    ..
+    Program received signal SIGTRAP, Trace/breakpoint trap.
+    0x00000000006b20cd in main ()
+
+Dissassemble the code via `disassemble`, and step over instructions one at a time via `stepi`.  If your program is long you might see a lot of output from the `disassemble` step:
+
+    (gdb) disassemble
+    Dump of assembler code for function main:
+       0x00000000006b20cb:	push   %rbp
+       0x00000000006b20cc:	int3
+    => 0x00000000006b20cd:	fldl   0x6b20b3
+       0x00000000006b20d4:	fstpl  0x6b2090
+       0x00000000006b20db:	mov    0x6b2090,%rax
+       0x00000000006b20e3:	push   %rax
+       0x00000000006b20e4:	fldl   0x6b20bb
+       0x00000000006b20eb:	fstpl  0x6b2090
+       0x00000000006b20f2:	mov    0x6b2090,%rax
+       0x00000000006b20fa:	push   %rax
+       ..
+
+You can set a breakpoint at a line in the future, and continue running till
+you hit it, with something like this:
+
+     (gdb) break *0x00000000006b20fa
+     (gdb) cont
+
+Once there inspect the registers with commands like:
+
+     (gdb) print $rax
+     (gdb) info registers
+
+My favourite is this, which shows you the floating-point values as well
+as the raw:
+
+     (gdb) info registers float
+     st0            0.140652076786443369638	(raw 0x3ffc90071917a6263000)
+     st1            0	(raw 0x00000000000000000000)
+     st2            0	(raw 0x00000000000000000000)
+
+
 
 
 
