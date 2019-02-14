@@ -1,6 +1,6 @@
 # math-compiler
 
-This project contains the simplest possible compiler, which converts simple mathematical operations into assembly language, allowing all the speed in your sums!
+This project contains the simplest possible compiler, which converts mathematical operations into assembly language, allowing all the speed in your sums!
 
 Because this is a simple project it provides only a small number of primitives:
 
@@ -15,7 +15,12 @@ Because this is a simple project it provides only a small number of primitives:
 * `tan`
 * `sqrt`
 
-Operations may return floating-point numbers, and negative numbers though, which is nice to see.
+Despite this toy-functionality there is a lot going on, and we support:
+
+* Full RPN input
+* Floating-point numbers (i.e. one-third multipled by nine is 3)
+   * `1 3 / 9 *`
+* Negative numbers work as you'd expect.
 
 
 # Installation
@@ -39,11 +44,10 @@ In theory this would allow me to compile things like this:
 
     2 + ( 4 * 54 )
 
-However I even simplified that, via the use of a "[Reverse Polish](https://en.wikipedia.org/wiki/Reverse_Polish_notation)"-like notation, so if you want to run that example you'd enter the expression as:
+However I even simplified that, via the use of a "[Reverse Polish](https://en.wikipedia.org/wiki/Reverse_Polish_notation)" notation, so if you want to run that example you'd enter the expression as:
 
     4 54 * 2 +
 
-(In our case we have no stack, so we just assume "operand ... operand operator", constantly.)
 
 
 
@@ -67,15 +71,13 @@ There you see:
 If you prefer you can also let the compiler do the heavy-lifting, and generate an executable for you directly.  Simply add `-compile`, and execute the generated `a.out` binary:
 
     $ math-compiler -compile=true '2 8 ^'
-    $ a.out
+    $ ./a.out
     Result 256
 
 Or to compile __and__ execute directly:
 
-    $ ./math-compiler -run '3 45 * 9 +  12 /'
+    $ math-compiler -run '3 45 * 9 + 12 /'
     Result 12
-
-
 
 
 ## Test Cases
@@ -105,33 +107,75 @@ they produce the correct result.
 
 
 
-## Numerical Limits
+### Debugging the generated programs
 
-I try to use full-width instructions where possible.
+If you run the compiler with the `-debug` flag a breakpoint will be generated
+immediately at the start of the program.  You can use that breakpoint to easily
+debug the generated binary via `gdb`.
 
-As you can see the registers can store a different number of bits, depending on how much you access:
+For example you might generate a program "2 3 + 4 /" like so:
 
-     0x1122334455667788
-     ================ rax (64 bits)
-             ======== eax (32 bits)
-                 ====  ax (16 bits)
-                   ==  ah (8 bits)
-                   ==  al (8 bits)
+    $ math-compiler -compile -debug '2 3 + 4 /'
 
-I believe that means we should be OK to store 64-bit numbers.
+Now you can launch that binary under `gdb`, and run it:
+
+    $ gdb ./a.out
+    (gdb) run
+    ..
+    Program received signal SIGTRAP, Trace/breakpoint trap.
+    0x00000000006b20cd in main ()
+
+Dissassemble the code via `disassemble`, and step over instructions one at a time via `stepi`.  If your program is long you might see a lot of output from the `disassemble` step:
+
+    (gdb) disassemble
+    Dump of assembler code for function main:
+       0x00000000006b20cb:	push   %rbp
+       0x00000000006b20cc:	int3
+    => 0x00000000006b20cd:	fldl   0x6b20b3
+       0x00000000006b20d4:	fstpl  0x6b2090
+       0x00000000006b20db:	mov    0x6b2090,%rax
+       0x00000000006b20e3:	push   %rax
+       0x00000000006b20e4:	fldl   0x6b20bb
+       0x00000000006b20eb:	fstpl  0x6b2090
+       0x00000000006b20f2:	mov    0x6b2090,%rax
+       0x00000000006b20fa:	push   %rax
+       ...
+       ...
+
+You can set a breakpoint at a line in the future, and continue running till
+you hit it, with something like this:
+
+     (gdb) break *0x00000000006b20fa
+     (gdb) cont
+
+Once there inspect the registers with commands like:
+
+     (gdb) print $rax
+     (gdb) info registers
+
+My favourite is this, which shows you the floating-point values as well
+as the raw:
+
+     (gdb) info registers float
+     st0            0.140652076786443369638	(raw 0x3ffc90071917a6263000)
+     st1            0	(raw 0x00000000000000000000)
+     st2            0	(raw 0x00000000000000000000)
+     ...
+     ...
+
 
 
 
 ## Possible Expansion?
 
-The obvious thing to improve in this compiler is to add support for more floating-point operations.
-
-At the moment basic-support is present, allowing calcuations such as this to produce the correct result:
+The obvious thing to improve in this compiler is to add support for more floating-point operations.  At the moment basic-support is present, allowing calcuations such as this to produce the correct result:
 
 * `3 2 /`
   * Correctly returns `1.5`
 * `1 3 / 9 *`
   * Correctly returns 1/3 * 9 == `3`.
+* `81 sqrt sqrt`
+  * Correctly returns `root(root(81))`
 
 
 

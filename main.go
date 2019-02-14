@@ -1,5 +1,4 @@
 // This is the main-driver for our compiler.
-//
 
 package main
 
@@ -18,6 +17,7 @@ func main() {
 	//
 	// Look for flags.
 	//
+	debug := flag.Bool("debug", false, "Insert debug \"stuff\" in our generated output.")
 	compile := flag.Bool("compile", false, "Compile the program, via invoking gcc.")
 	program := flag.String("filename", "a.out", "The program to write to.")
 	run := flag.Bool("run", false, "Run the binary, post-compile.")
@@ -43,13 +43,17 @@ func main() {
 	//
 	comp := compiler.New(flag.Args()[0])
 
+	if *debug {
+		comp.SetDebug(true)
+	}
+
 	//
 	// Parse the program into a series of statements, etc.
 	//
 	// At this point there might be errors.  If so report them,
 	// and terminate.
 	//
-	err := comp.Compile()
+	err := comp.Tokenize()
 	if err != nil {
 		fmt.Printf("There was an error compiling the input expression:\n")
 		fmt.Printf("%s\n", err.Error())
@@ -57,7 +61,12 @@ func main() {
 	}
 
 	//
-	// Now generate a program from the expression.
+	// Convert the tokens to their internal form.
+	//
+	comp.InternalForm()
+
+	//
+	// Now generate the output assembly
 	//
 	var out string
 	out, err = comp.Output()
@@ -68,7 +77,7 @@ func main() {
 	}
 
 	//
-	// If we're not compiling then we just write that to STDOUT.
+	// If we're not compiling then we just write the program to STDOUT.
 	//
 	if *compile == false {
 		fmt.Printf("%s", out)

@@ -37,10 +37,10 @@ test_compile() {
 
 
 # Simple operations
-test_compile '3 4 +' 7
-test_compile '3 4 *' 12
-test_compile '10 2 -' 8
-test_compile '10 2 /' 5
+test_compile '1 2 3 4 + + +' 10
+test_compile '3 4 5 * *'     60
+test_compile '20 10 2 - -'   12
+test_compile '20 4 2 / / '   10
 
 # modulus
 test_compile  '1 4 %' 1
@@ -58,14 +58,15 @@ test_compile '12 4 %' 0
 
 # powers of two - the manual-way
 test_compile '2 2 *' 4
-test_compile '2 2 * 2 *' 8
-test_compile '2 2 * 2 * 2 *' 16
-test_compile '2 2 * 2 * 2 * 2 *' 32
-test_compile '2 2 * 2 * 2 * 2 * 2 *' 64
-test_compile '2 2 * 2 * 2 * 2 * 2 * 2 *' 128
-test_compile '2 2 * 2 * 2 * 2 * 2 * 2 * 2 *' 256
-test_compile '2 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 *' 512
-test_compile '2 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 *' 1024
+test_compile '2 2 2 * *' 8
+test_compile '2 2 2 2 * * *' 16
+test_compile '2 2 2 2 2 * * * *' 32
+test_compile '2 2 2 2 2 2 * * * * *' 64
+test_compile '2 2 2 2 2 2 2 * * * * * *' 128
+test_compile '2 2 2 2 2 2 2 2 * * * * * * *' 256
+test_compile '2 2 2 2 2 2 2 2 2 * * * * * * * *' 512
+test_compile '2 2 2 2 2 2 2 2 2 2 * * * * * * * * *' 1024
+
 
 # Add an extreme example of calculating 2^24:
 inp="2 2 *"
@@ -89,9 +90,20 @@ test_compile '2 16 ^'      65536
 test_compile '2 30 ^' 1.07374e+09
 
 
-# Note we're operating on integers, so these are "correct".
+# division
 test_compile '3 2 /' 1.5
 test_compile '5 2 /' 2.5
 
+
+# sqrt
+test_compile '9 sqrt' 3
+test_compile '81 sqrt sqrt' 3
+test_compile '81 sqrt sqrt sqrt' 1.73205
+
+
+# circles
+test_compile '1 sin' 0.841471
+test_compile '1 cos' 0.540302
+test_compile '1 tan' 1.55741
 
 exit 0

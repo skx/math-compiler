@@ -28,7 +28,7 @@ func TestBogusInput(t *testing.T) {
 
 	for _, test := range tests {
 		c := New(test)
-		err := c.Compile()
+		err := c.Tokenize()
 		if err == nil {
 			t.Errorf("We expected an error handling '%s', but got none!", test)
 		}
@@ -45,13 +45,29 @@ func TestValidPrograms(t *testing.T) {
 		"9 3 /",
 		"10 5 %",
 		"2 8 ^",
+		"3 sin",
+		"4 cos",
+		"5 tan",
+		"10 sqrt",
 	}
 
 	for _, test := range tests {
+
 		c := New(test)
-		err := c.Compile()
+
+		// tokenize
+		err := c.Tokenize()
 		if err != nil {
-			t.Errorf("We didn't expect an error compiling a vlid program, but found one %s", err.Error())
+			t.Errorf("We didn't expect an error tokenizing a valid program, but found one %s", err.Error())
+		}
+
+		// convert to internal form
+		c.InternalForm()
+
+		// output the text
+		_, err = c.Output()
+		if err != nil {
+			t.Errorf("We didn't expect an error generating our assembly %s", err.Error())
 		}
 	}
 }
@@ -90,7 +106,7 @@ func TestValidOutput(t *testing.T) {
 		c := New(test)
 
 		// compile
-		err := c.Compile()
+		err := c.Tokenize()
 		if err != nil {
 			t.Errorf("We didn't expect an error compiling a valid program, but found one %s", err.Error())
 		}
@@ -109,36 +125,56 @@ func TestValidOutput(t *testing.T) {
 	}
 }
 
-// Test actually outputing some invalid programs.
-//
-// This test covers the full range:
-//   "parse".
-//   "compile".
-//   "output".
-//
-func TestInvalidOutput(t *testing.T) {
+// TestFakeCoverage just calls the various generating methods, to ensure
+// they're covered.  Since there is no logic in them testing them is pretty
+// pointless.
+func TestFakeCoverage(t *testing.T) {
 
-	tests := []string{
-		"3 0 /",
-		"3 3.3 %",
-		"2 3.4 ^",
+	// create
+	c := New("2 3+")
+
+	// misc
+	c.genPush("3.4")
+
+	// simple
+	c.genPlus()
+	c.genMinus()
+	c.genMultiply()
+	c.genDivide()
+
+	// misc
+	c.genModulus()
+	c.genPower(1)
+
+	// complex
+	c.genCos()
+	c.genSin()
+	c.genSqrt()
+	c.genTan()
+}
+
+// TestEscape tests excaping numbers to constants
+func TestEscape(t *testing.T) {
+
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"3", "const_3"},
+		{"0.03", "const_0_03"},
+		{"-3", "const_neg_3"},
+		{"-3.3", "const_neg_3_3"},
 	}
 
-	for _, test := range tests {
+	for _, text := range tests {
 
-		// create
-		c := New(test)
+		c := New("")
 
-		// compile
-		err := c.Compile()
-		if err != nil {
-			t.Errorf("We didn't expect an error compiling an invalid program, but found one %s", err.Error())
-		}
+		got := c.escapeConstant(text.input)
 
-		// output
-		_, err = c.Output()
-		if err == nil {
-			t.Errorf("We expected an error outputing an invalid program, but found none")
+		if got != text.expected {
+			t.Errorf("Expected '%s' to become '%s', got '%s'",
+				text.input, text.expected, got)
 		}
 	}
 }

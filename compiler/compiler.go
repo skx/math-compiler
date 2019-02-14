@@ -1,18 +1,19 @@
 // compiler contains our simple compiler.
 //
-// In brief it uses the lexer to tokenize the expression, and outputs
-// a simple assembly language program.
+// In brief it uses the lexer to tokenize the expression, then we convert
+// that series of tokens into an "internal representation" which is pretty
+// much things like:
 //
-// There are only two minor complications:
+//    push_int 3
+//    push_int 4
+//    Add
 //
-//  1.  We store all the input-floats in the data-area of the program.
-//      These require escaping for uniqueness purposes.
+// We iterate over this simple representation and output a block of code
+// for each.
 //
-//  2.  We output different instructions based on the operator.
-//
-//  we could do better with an intermediary form, concatenating small
-// segments of code, and avoiding the frequent loads from the `result`
-// location.
+// There are only one minor complication - storing all the input-floats
+// in the data-area of the program.  These require escaping for uniqueness
+// purposes, and to avoid issues with the assembling.
 //
 // That said this is a toy, and will remain a toy, so I can live with
 // these problems.
@@ -21,12 +22,11 @@
 package compiler
 
 import (
-	"bytes"
 	"fmt"
 	"strconv"
 	"strings"
-	"text/template"
 
+	"github.com/skx/math-compiler/instructions"
 	"github.com/skx/math-compiler/lexer"
 	"github.com/skx/math-compiler/token"
 )
@@ -34,27 +34,55 @@ import (
 // Compiler holds our object-state.
 type Compiler struct {
 
+	// debug holds a flag to decide if debugging "stuff" is generated
+	// in the output assembly.
+	debug bool
+
 	// expression holds the mathematical expression we're compiling.
 	expression string
+
+	//
+	// Constants we come across.
+	//
+	// Rather than placing the numbers in-line we're storing them
+	// in the constant area.  This gives us a level of indirection,
+	// but it simpler to reason about.
+	//
+	// Note that if we see "3 + 4 + 3 + 4" we only store each of
+	// the constants once each.  So we have a map here, key is the
+	// value of the constant, and `bool` to record that we found it.
+	//
+	// Later we'll output just the unique keys.
+	//
+	constants map[string]bool
 
 	// tokens holds the expression, broken down into a series of tokens.
 	//
 	// The tokens are received from the lexer, and are not modified.
 	tokens []token.Token
+
+	// Instructions is the virtual instructions we're going to compile
+	// to assembly
+	instructions []instructions.Instruction
 }
 
 // New creates a new compiler, given the expression in the constructor.
 func New(input string) *Compiler {
-	c := &Compiler{expression: input}
+	c := &Compiler{expression: input, constants: make(map[string]bool), debug: false}
 	return c
 }
 
-// Compiler populates our internal list of tokens, as a result of
+// SetDebug changes the debug-flag for our output.
+func (c *Compiler) SetDebug(val bool) {
+	c.debug = val
+}
+
+// Tokenize populates our internal list of tokens, as a result of
 // lexing the input string.
 //
 // There is some error-handling to ensure that the program looks
 // somewhat reasonable.
-func (c *Compiler) Compile() error {
+func (c *Compiler) Tokenize() error {
 
 	//
 	// Create the lexer, which will parse our expression.
@@ -113,346 +141,204 @@ func (c *Compiler) Compile() error {
 	return nil
 }
 
-// Output converts our series of tokens (i.e. the lexed expression) into
-// an assembly-language program.
-func (c *Compiler) Output() (string, error) {
+// InternalForm converts our series of tokens (i.e. the lexed expression) into
+// an an intermediary form, collecting constants as they are discovered.
+//
+// This is the middle-step before generating our assembly-language program.
+func (c *Compiler) InternalForm() {
 
 	//
-	// Get the starting integer.
+	// Walk our tokens.
 	//
-	start := c.tokens[0].Literal
+	for _, t := range c.tokens {
 
-	//
-	// We expect to work in pairs; reading two elements from
-	// our program.
-	//
-	// For example with the program:
-	//
-	//  3 4 + 5 * 2 /
-	//
-	// We're going to iterate over the program - skipping the first
-	// token - so we'll expect:
-	//
-	//  4 +
-	//  5 *
-	//  2 /
-	//
-	// i.e. Number, operator
-	//
-	// We'll populate an array of the operations we emit
-	// to assembly language.
-	//
-	var operations []string
-
-	//
-	// Constants we come across.
-	//
-	// Rather than placing the integers in-line we're storing them
-	// in the constant area.  This gives us a level of indirection,
-	// but it simpler to reason about.
-	//
-	// Note that if we see "3 + 4 + 3 + 4" we only store each of
-	// the constants once each.  So we have a map here, key is the
-	// value of the constant, and `bool` to record that we found it.
-	//
-	// Later we'll output just the unique keys.
-	//
-	constants := make(map[string]bool)
-
-	//
-	// Temporary-storage for the number we're operating upon next.
-	//
-	var i string
-
-	//
-	// Walk over the array of tokens - skipping the first one,
-	// which is our initial value.
-	//
-	for offset, ent := range c.tokens[1:] {
-
-		switch ent.Type {
-
-		case token.NUMBER:
-			// Save the literal value away
-			i = ent.Literal
-
-			// Record that this constant is set.
-			constants[ent.Literal] = true
-
-		case token.PLUS:
-
-			// load the (current) result
-			operations = append(operations, `fld qword ptr [result]`)
-
-			// add the constant
-			constant := c.escapeConstant(i)
-			operations = append(operations, `fadd qword ptr [`+constant+`]`)
-
-			// store back in the result store.
-			operations = append(operations, `fstp qword ptr [result]`)
-
-		case token.MOD:
-
-			// ensure that "i" is an int
-			if strings.Contains(i, ".") {
-				return "", fmt.Errorf("Can only run a modulus operation with an integer")
-			}
-
-			// load the (current) result
-			operations = append(operations, `fld qword ptr [result]`)
-			// round to float
-			operations = append(operations, `frndint`)
-			// store back
-			operations = append(operations, `fistp qword ptr [result]`)
-			// get that value in rax
-			operations = append(operations, `mov rax, qword ptr [result]`)
-
-			// do the modulus.  magic.
-			operations = append(operations, `xor rdx, rdx`)
-			operations = append(operations, `mov rbx, `+i)
-			operations = append(operations, `cqo`)
-			operations = append(operations, `div rbx`)
-			operations = append(operations, `mov rax, rdx`)
-
-			// store back the value in eax into the address, appropriately
-			operations = append(operations, `mov qword ptr[result], rax`)
-			operations = append(operations, `fild qword ptr [result]
-`)
-			operations = append(operations, `fstp qword ptr [result]`)
-
-		case token.MINUS:
-
-			// load the (current) result
-			operations = append(operations, `fld qword ptr [result]`)
-
-			// subtract the constant
-			constant := c.escapeConstant(i)
-			operations = append(operations, `fsub qword ptr [`+constant+`]`)
-
-			// store back in the result store.
-			operations = append(operations, `fstp qword ptr [result]`)
-
-		case token.POWER:
-
-			// ensure that "i" is an int
-			if strings.Contains(i, ".") {
-				return "", fmt.Errorf("Can only raise a number to an integer-power")
-			}
-
-			//
-			// N ^ 0 -> 0
-			// N ^ 1 -> N
-			// N ^ 2 -> N * N
-			// N ^ 3 -> N * N * N
-			// ..
-			//
-			switch i {
-			case "0":
-				// store zero
-				operations = append(operations, `fldz`)
-				operations = append(operations, `fstp qword ptr [result]`)
-			case "1":
-				// nop - result doesn't change.
-			default:
-				//
-				// We'll want to output a loop which
-				// means we need a unique label
-				//
-				// We generate the label ID as the offset of
-				// the statement we're generating in our input
-				//
-				label := fmt.Sprintf("label_%d", offset)
-
-				// load the (current) result
-				operations = append(operations, `fld qword ptr [result]`)
-
-				// store in `int`
-				operations = append(operations, `fst qword ptr [int]`)
-
-				//
-				// Output the loop to calculate the power.
-				//
-				operations = append(operations, `mov rcx, `+i)
-				operations = append(operations, `dec rcx`)
-				operations = append(operations, label+":")
-				operations = append(operations, `  fmul qword ptr [int]`)
-				operations = append(operations, `  dec rcx`)
-				operations = append(operations, `  jnz `+label)
-
-				//
-				// Store the value
-				//
-				operations = append(operations, `fstp qword ptr [result]`)
-
-			}
-
-		case token.SLASH:
-
-			// prevent division by zero.
-			if i == "0" {
-				return "", fmt.Errorf("Division by zero!")
-			}
-
-			// load the (current) result
-			operations = append(operations, `fld qword ptr [result]`)
-
-			// divide by the constant
-			constant := c.escapeConstant(i)
-			operations = append(operations, `fdiv qword ptr [`+constant+`]`)
-
-			// store back in the result store.
-			operations = append(operations, `fstp qword ptr [result]`)
+		//
+		// Handle each kind.
+		//
+		switch t.Type {
 
 		case token.ASTERISK:
 
-			// load the (current) result
-			operations = append(operations, `fld qword ptr [result]`)
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Type: instructions.Multiply})
 
-			// multiply by the constant
-			constant := c.escapeConstant(i)
-			operations = append(operations, `fmul qword ptr [`+constant+`]`)
+		case token.COS:
 
-			// store back in the result store.
-			operations = append(operations, `fstp qword ptr [result]`)
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Type: instructions.Cos})
+
+		case token.NUMBER:
+
+			// Mark the constant as having been used.
+			c.constants[t.Literal] = true
+
+			// add the instruction
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Type: instructions.Push, Value: t.Literal})
+
+		case token.MOD:
+
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Type: instructions.Modulus})
+
+		case token.MINUS:
+
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Type: instructions.Minus})
+
+		case token.PLUS:
+
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Type: instructions.Plus})
+
+		case token.POWER:
+
+			// add the instruction
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Type: instructions.Power})
 
 		case token.SIN:
 
-			// load the (current) result
-			operations = append(operations, `fld qword ptr [result]`)
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Type: instructions.Sin})
 
-			// run the sin
-			operations = append(operations, `fsin`)
+		case token.SLASH:
 
-			// store back in the result store.
-			operations = append(operations, `fstp qword ptr [result]`)
-
-		case token.TAN:
-
-			// load the (current) result
-			operations = append(operations, `fld qword ptr [result]`)
-
-			// run the tan, via a two-step operation
-			operations = append(operations, `fsincos`)
-			operations = append(operations, `fdivr %st(0), st(1)`)
-			// store back in the result store.
-			operations = append(operations, `fstp qword ptr [result]`)
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Type: instructions.Divide})
 
 		case token.SQRT:
 
-			// load the (current) result
-			operations = append(operations, `fld qword ptr [result]`)
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Type: instructions.Sqrt})
 
-			// run the square root
-			operations = append(operations, `fsqrt`)
+		case token.TAN:
 
-			// store back in the result store.
-			operations = append(operations, `fstp qword ptr [result]`)
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Type: instructions.Tan})
 
-		case token.COS:
-			// load the (current) result
-			operations = append(operations, `fld qword ptr [result]`)
-
-			// run the cos
-			operations = append(operations, `fcos`)
-
-			// store back in the result store.
-			operations = append(operations, `fstp qword ptr [result]`)
-
-		default:
-			return "", fmt.Errorf("Invalid program - expected operator, but found %v\n", ent)
 		}
 	}
 
-	//
-	// Now we have our starting number, and our list of operations
-	//
-	// Create a structure to hold these such that we can populate
-	// our output-template.
-	//
-	type Assembly struct {
-		// The starting value.
-		Start string
+}
 
-		// The operations we carry out.
-		Operations []string
-
-		// Any constants we load.
-		Constants []string
-	}
+// Output writes our program to stdout
+func (c *Compiler) Output() (string, error) {
 
 	//
-	// Create an instance of the output-structure, and populate it.
+	// The header.
 	//
-	var out Assembly
-
-	//
-	// Starting value.
-	//
-	out.Start = start
-
-	//
-	// Assembly-language operations
-	//
-	out.Operations = operations
-
-	//
-	// The constants
-	//
-	for key, _ := range constants {
-		out.Constants = append(out.Constants, key)
-	}
-
-	//
-	// This is the template we'll output.
-	//
-	assembly := `
+	header := `
 .intel_syntax noprefix
 .global main
 
 # Data-section: Contains the format-string for our output message,
-#               the starting value, and any constants we use.
+#               etc.
 .data
-result: .double {{.Start}}
-int: .double 0.0
-fmt:   .asciz "Result %g\n"
-{{range .Constants}}const_{{.}}: .double {{.}}
-{{end}}
+   int: .double 0.0
+   a: .double 0.0
+   b: .double 0.0
+   fmt:   .asciz "Result %g\n"
+`
 
-main:
-        push	rbp
+	//
+	// Add on the constants
+	//
+	for v, _ := range c.constants {
+		header += fmt.Sprintf("%s: .double %s\n",
+			c.escapeConstant(v), v)
+	}
 
-{{range .Operations}} {{.}}
-{{end}}
+	header += `main:
+push rbp
+`
+	if c.debug {
+		header += "int 03\n"
+	}
 
+	//
+	// The body of the program
+	//
+	body := ""
+
+	//
+	// Now we walk over our form.
+	//
+	for i, opr := range c.instructions {
+
+		//
+		// We'll output a different chunk of asm for each
+		// of our instructions.
+		//
+		switch opr.Type {
+
+		case instructions.Push:
+			body += c.genPush(opr.Value)
+
+		case instructions.Plus:
+			body += c.genPlus()
+
+		case instructions.Minus:
+			body += c.genMinus()
+
+		case instructions.Multiply:
+			body += c.genMultiply()
+
+		case instructions.Divide:
+			body += c.genDivide()
+
+		case instructions.Power:
+			body += c.genPower(i)
+
+		case instructions.Modulus:
+			body += c.genModulus()
+
+		case instructions.Sin:
+			body += c.genSin()
+
+		case instructions.Cos:
+			body += c.genCos()
+
+		case instructions.Tan:
+			body += c.genTan()
+
+		case instructions.Sqrt:
+			body += c.genSqrt()
+
+		}
+	}
+
+	footer := `
         # print the result
         lea rdi,fmt
+        # get the value to print in xmm0
+        pop rax
+        mov qword ptr [a], rax
+        movq xmm0, [a]
+        # one argument
         movq rax, 1
-        movq xmm0, [result]
         call printf
+
+        #
+        # If the user left rubbish on the stack then we could
+        # exit more cleanly via:
+        #
+        #   mov     rax, 1
+        #   xor     ebx, ebx
+        #   int     0x80
+        #
+        # Since that won't care about the broken return-address.
+        # That said I think we should probably assume the user knows
+        # their problem/program.
+        #
 
         # clean and exit
         pop	rbp
         xor rax, rax
         ret
-
 `
 
-	//
-	// Compile the template.
-	//
-	t := template.Must(template.New("tmpl").Parse(assembly))
-
-	//
-	// And now execute it, into a buffer.
-	//
-	buf := &bytes.Buffer{}
-	err := t.Execute(buf, out)
-	if err != nil {
-		return "", err
-	}
-
-	return buf.String(), nil
-
+	return header + body + footer, nil
 }
 
 // escapeConstant converts a floating-point number such as
@@ -468,8 +354,299 @@ func (c *Compiler) escapeConstant(input string) string {
 		fmt.Printf("%s\n", err.Error())
 	}
 
+	var val string
 	if s < 0 {
-		return fmt.Sprintf("const_neg_%s", input)
+		val = fmt.Sprintf("const_neg_%s", input)
+	} else {
+		val = fmt.Sprintf("const_%s", input)
 	}
-	return fmt.Sprintf("const_%s", input)
+
+	// remove periods
+	val = strings.Replace(val, ".", "_", -1)
+	// remove minus-signs
+	val = strings.Replace(val, "-", "", -1)
+	return val
+}
+
+// genPush generates assembly code to push a value upon the RPN stack.
+func (c *Compiler) genPush(value string) string {
+
+	text := `
+        fld qword ptr #VAL
+        fstp qword ptr [int]
+        mov rax, qword ptr [int]
+        push rax
+`
+
+	return (strings.Replace(text, "#VAL", c.escapeConstant(value), -1))
+}
+
+// genPlus generates assembly code to pop two values from the stack,
+// add them and store the result back on the stack.
+func (c *Compiler) genPlus() string {
+
+	return `
+        # pop two values
+        pop rax
+        mov qword ptr [a], rax
+        pop rax
+        mov qword ptr [b], rax
+
+        # add
+        fld qword ptr [a]
+        fadd qword ptr  [b]
+        fstp qword ptr [a]
+
+        # push the result back onto the stack
+        mov rax, qword ptr [a]
+        push rax
+`
+}
+
+// genMinus generates assembly code to pop two values from the stack,
+// subtract them and store the result back on the stack.
+func (c *Compiler) genMinus() string {
+	return `
+        # pop two values
+        pop rax
+        mov qword ptr [a], rax
+        pop rax
+        mov qword ptr [b], rax
+
+        # sub
+        fld qword ptr [b]
+        fsub qword ptr  [a]
+        fstp qword ptr [a]
+
+        # push the result back onto the stack
+        mov rax, qword ptr [a]
+        push rax
+`
+}
+
+// genMultiply generates assembly code to pop two values from the stack,
+// multiply them and store the result back on the stack.
+func (c *Compiler) genMultiply() string {
+	return `
+        # pop two values
+        pop rax
+        mov qword ptr [a], rax
+        pop rax
+        mov qword ptr [b], rax
+
+        # multiply
+        fld qword ptr [a]
+        fmul qword ptr  [b]
+        fstp qword ptr [a]
+
+        # push the result back onto the stack
+        mov rax, qword ptr [a]
+        push rax
+`
+
+}
+
+// genModulus generates assembly code to pop two values from the stack,
+// perform a modulus-operation and store the result back on the stack.
+// Note we truncate things to integers in this section of the code.
+func (c *Compiler) genModulus() string {
+	return `
+
+        # pop two values - rounding both to ints
+        pop rax
+        mov qword ptr [a], rax
+        fld qword ptr [a]
+        frndint
+        fistp qword ptr [a]
+
+        pop rax
+        mov qword ptr [b], rax
+        fld qword ptr [b]
+        frndint
+        fistp qword ptr [b]
+
+        # now we do the modulus-magic.
+        mov rax, qword ptr [b]
+        mov rbx, qword ptr [a]
+        xor rdx, rdx
+        cqo
+        div rbx
+
+        # store the result from 'rdx'.
+        mov qword ptr[a], rdx
+        fild qword ptr [a]
+        fstp qword ptr [a]
+        mov rax, qword ptr [a]
+        push rax
+`
+}
+
+// genDivide generates assembly code to pop two values from the stack,
+// divide them and store the result back on the stack.
+func (c *Compiler) genDivide() string {
+	return `
+        # pop two values
+        pop rax
+        mov qword ptr [a], rax
+        pop rax
+        mov qword ptr [b], rax
+
+        # divide
+        fld qword ptr [b]
+        fdiv qword ptr  [a]
+        fstp qword ptr [a]
+
+        # push the result back onto the stack
+        mov rax, qword ptr [a]
+        push rax
+`
+
+}
+
+// genSqrt generates assembly code to pop a value from the stack,
+// run a square-root operation, and store the result back on the stack.
+func (c *Compiler) genSqrt() string {
+	return `
+        # pop one value
+        pop rax
+        mov qword ptr [a], rax
+
+        # sqrt
+        fld qword ptr [a]
+        fsqrt
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+}
+
+// genSin generates assembly code to pop a value from the stack,
+// run a sin-operation, and store the result back on the stack.
+func (c *Compiler) genSin() string {
+	return `
+        # pop one value
+        pop rax
+        mov qword ptr [a], rax
+
+        # sin
+        fld qword ptr [a]
+        fsin
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+}
+
+// genCos generates assembly code to pop a value from the stack,
+// run a cos-operation, and store the result back on the stack.
+func (c *Compiler) genCos() string {
+	return `
+        # pop one value
+        pop rax
+        mov qword ptr [a], rax
+
+        # cos
+        fld qword ptr [a]
+        fcos
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+}
+
+// genTan generates assembly code to pop a value from the stack,
+// run a tan-operation, and store the result back on the stack.
+func (c *Compiler) genTan() string {
+	return `
+        # pop one value
+        pop rax
+        mov qword ptr [a], rax
+
+        # tan
+        fld qword ptr [a]
+        fsincos
+        fdivr %st(0),st(1)
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+}
+
+// genPower generates assembly code to pop two values from the stack,
+// perform a power-raising and store the result back on the stack.
+//
+// Note we truncate things to integers in this section of the code.
+//
+// Note we do some comparisions here, and need to generate some (unique) labels
+//
+func (c *Compiler) genPower(i int) string {
+	text := `
+
+        # pop two values - rounding both to ints
+        pop rax
+        mov qword ptr [a], rax
+        fld qword ptr [a]
+        frndint
+        fistp qword ptr [a]
+
+        pop rax
+        mov qword ptr [b], rax
+        fld qword ptr [b]
+        frndint
+        fistp qword ptr [b]
+
+        # get the two values
+        mov rax, qword ptr [b]
+        mov rbx, qword ptr [a]
+
+        # if the power is 0 we return zero
+        cmp rbx, 0
+        jne none_zero_#ID
+           # store zero
+           fldz
+           jmp store_value_#ID
+
+none_zero_#ID:
+
+        # if the power is 1 we return the original value
+        cmp rbx, 1
+        jne none_one_#ID
+           mov qword ptr[a], rax
+           fild qword ptr [a]
+           jmp store_value_#ID
+
+none_one_#ID:
+        # here we have rax having a value
+        # and we have rbx having the power to raise
+        mov rcx, rax   # save the value
+
+        # decrease the power by one.
+        dec rbx
+again_#ID:
+           # rax = rax * rcx (which is the original value we started with)
+           imul rax,rcx
+           dec rbx
+           jnz again_#ID
+
+        mov qword ptr[a], rax
+        fild qword ptr [a]
+
+store_value_#ID:
+
+        fstp qword ptr [a]
+
+        # push the result back onto the stack
+        mov rax, qword ptr [a]
+        push rax
+`
+
+	return (strings.Replace(text, "#ID", fmt.Sprintf("%d", i), -1))
 }
