@@ -33,13 +33,19 @@ const (
 	SIN  = "sin"
 	SQRT = "sqrt"
 	TAN  = "tan"
+
+	// stack operations
+	DUP  = "dup"
+	SWAP = "swap"
 )
 
 // reversed keywords
 var keywords = map[string]TokenType{
 	"cos":  COS,
+	"dup":  DUP,
 	"sin":  SIN,
 	"sqrt": SQRT,
+	"swap": SWAP,
 	"tan":  TAN,
 }
 
