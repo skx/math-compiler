@@ -239,15 +239,34 @@ func (c *Compiler) Output() (string, error) {
 	// The header.
 	//
 	header := `
+#
+# This assembly file was created by math-compiler.
+#
+# We're going to use Intel Syntax, because that is what I grew up with.
+#
 .intel_syntax noprefix
 .global main
 
-# Data-section: Contains the format-string for our output message,
-#               etc.
+# Data-section:
+#
+# This contains data for the program at run-time.
+#
+#    int: is used to push values onto the stack.
+#
+#      a: used as an argument for functions that require one/two operands.
+#
+#      b: used as an argument for functions that require two operands.
+#
+#  depth: used to keep track of stack-depth.
+#
+#    fmt: Used to output the result of the calculation, and div_zero for
+#         the obvious error-case.
+#
 .data
-        int: .double 0.0
           a: .double 0.0
           b: .double 0.0
+      depth: .double 0.0
+        int: .double 0.0
         fmt: .asciz "Result %g\n"
    div_zero: .asciz "Attempted division by zero.  Aborting\n"
 `
@@ -260,11 +279,26 @@ func (c *Compiler) Output() (string, error) {
 			c.escapeConstant(v), v)
 	}
 
-	header += `main:
-push rbp
+	header += `
+#
+# Main is our entry-point.
+#
+# We'll save rbp before we begin
+main:
+        push rbp
+
+        # Our stack is initially empty (of numbers), so ensure that [depth]
+        # is set to zero.
+        # Every time we push a value upon the stack we'll increase this value
+        # and before we pop arguments from the stack we'll check there are
+        # sufficient values stored.  This will prevent segfaults when user
+        # programs are broken.
+        mov qword ptr [depth], 0
+
 `
 	if c.debug {
-		header += "int 03\n"
+		header += "        # Debug-break\n"
+		header += "        int 03\n"
 	}
 
 	//
@@ -272,14 +306,12 @@ push rbp
 	//
 	body := ""
 
-	//
-	// Now we walk over our form.
-	//
+	// Now we walk over our internal-representation, and output
+	// a chunk of assembly for each of our operator-types.
 	for i, opr := range c.instructions {
 
 		//
-		// We'll output a different chunk of asm for each
-		// of our instructions.
+		// One-handler for each type: Alphabetical order.
 		//
 		switch opr.Type {
 
