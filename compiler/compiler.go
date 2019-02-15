@@ -391,114 +391,20 @@ func (c *Compiler) escapeConstant(input string) string {
 	return val
 }
 
-// genPush generates assembly code to push a value upon the RPN stack.
-func (c *Compiler) genPush(value string) string {
-
-	text := `
-        fld qword ptr #VAL
-        fstp qword ptr [int]
-        mov rax, qword ptr [int]
-        push rax
-`
-
-	return (strings.Replace(text, "#VAL", c.escapeConstant(value), -1))
-}
-
-// genPlus generates assembly code to pop two values from the stack,
-// add them and store the result back on the stack.
-func (c *Compiler) genPlus() string {
-
+// genCos generates assembly code to pop a value from the stack,
+// run a cos-operation, and store the result back on the stack.
+func (c *Compiler) genCos() string {
 	return `
-        # pop two values
+        # pop one value
         pop rax
         mov qword ptr [a], rax
-        pop rax
-        mov qword ptr [b], rax
 
-        # add
+        # cos
         fld qword ptr [a]
-        fadd qword ptr  [b]
+        fcos
         fstp qword ptr [a]
 
-        # push the result back onto the stack
-        mov rax, qword ptr [a]
-        push rax
-`
-}
-
-// genMinus generates assembly code to pop two values from the stack,
-// subtract them and store the result back on the stack.
-func (c *Compiler) genMinus() string {
-	return `
-        # pop two values
-        pop rax
-        mov qword ptr [a], rax
-        pop rax
-        mov qword ptr [b], rax
-
-        # sub
-        fld qword ptr [b]
-        fsub qword ptr  [a]
-        fstp qword ptr [a]
-
-        # push the result back onto the stack
-        mov rax, qword ptr [a]
-        push rax
-`
-}
-
-// genMultiply generates assembly code to pop two values from the stack,
-// multiply them and store the result back on the stack.
-func (c *Compiler) genMultiply() string {
-	return `
-        # pop two values
-        pop rax
-        mov qword ptr [a], rax
-        pop rax
-        mov qword ptr [b], rax
-
-        # multiply
-        fld qword ptr [a]
-        fmul qword ptr  [b]
-        fstp qword ptr [a]
-
-        # push the result back onto the stack
-        mov rax, qword ptr [a]
-        push rax
-`
-
-}
-
-// genModulus generates assembly code to pop two values from the stack,
-// perform a modulus-operation and store the result back on the stack.
-// Note we truncate things to integers in this section of the code.
-func (c *Compiler) genModulus() string {
-	return `
-
-        # pop two values - rounding both to ints
-        pop rax
-        mov qword ptr [a], rax
-        fld qword ptr [a]
-        frndint
-        fistp qword ptr [a]
-
-        pop rax
-        mov qword ptr [b], rax
-        fld qword ptr [b]
-        frndint
-        fistp qword ptr [b]
-
-        # now we do the modulus-magic.
-        mov rax, qword ptr [b]
-        mov rbx, qword ptr [a]
-        xor rdx, rdx
-        cqo
-        div rbx
-
-        # store the result from 'rdx'.
-        mov qword ptr[a], rdx
-        fild qword ptr [a]
-        fstp qword ptr [a]
+        # push result onto stack
         mov rax, qword ptr [a]
         push rax
 `
@@ -538,89 +444,101 @@ func (c *Compiler) genDup() string {
 `
 }
 
-// genSqrt generates assembly code to pop a value from the stack,
-// run a square-root operation, and store the result back on the stack.
-func (c *Compiler) genSqrt() string {
+// genMinus generates assembly code to pop two values from the stack,
+// subtract them and store the result back on the stack.
+func (c *Compiler) genMinus() string {
 	return `
-        # pop one value
+        # pop two values
         pop rax
         mov qword ptr [a], rax
+        pop rax
+        mov qword ptr [b], rax
 
-        # sqrt
-        fld qword ptr [a]
-        fsqrt
+        # sub
+        fld qword ptr [b]
+        fsub qword ptr  [a]
         fstp qword ptr [a]
 
-        # push result onto stack
+        # push the result back onto the stack
         mov rax, qword ptr [a]
         push rax
 `
 }
 
-// genSin generates assembly code to pop a value from the stack,
-// run a sin-operation, and store the result back on the stack.
-func (c *Compiler) genSin() string {
+// genModulus generates assembly code to pop two values from the stack,
+// perform a modulus-operation and store the result back on the stack.
+// Note we truncate things to integers in this section of the code.
+func (c *Compiler) genModulus() string {
 	return `
-        # pop one value
+
+        # pop two values - rounding both to ints
         pop rax
         mov qword ptr [a], rax
-
-        # sin
         fld qword ptr [a]
-        fsin
-        fstp qword ptr [a]
+        frndint
+        fistp qword ptr [a]
 
-        # push result onto stack
+        pop rax
+        mov qword ptr [b], rax
+        fld qword ptr [b]
+        frndint
+        fistp qword ptr [b]
+
+        # now we do the modulus-magic.
+        mov rax, qword ptr [b]
+        mov rbx, qword ptr [a]
+        xor rdx, rdx
+        cqo
+        div rbx
+
+        # store the result from 'rdx'.
+        mov qword ptr[a], rdx
+        fild qword ptr [a]
+        fstp qword ptr [a]
         mov rax, qword ptr [a]
         push rax
 `
 }
 
-// genSwap generates assembly code to pop two values from the stack and
-// push them back, in the other order.
-func (c *Compiler) genSwap() string {
+// genMultiply generates assembly code to pop two values from the stack,
+// multiply them and store the result back on the stack.
+func (c *Compiler) genMultiply() string {
 	return `
-        pop rax
-        pop rbx
-        push rax
-        push rbx
-`
-}
-
-// genCos generates assembly code to pop a value from the stack,
-// run a cos-operation, and store the result back on the stack.
-func (c *Compiler) genCos() string {
-	return `
-        # pop one value
+        # pop two values
         pop rax
         mov qword ptr [a], rax
+        pop rax
+        mov qword ptr [b], rax
 
-        # cos
+        # multiply
         fld qword ptr [a]
-        fcos
+        fmul qword ptr  [b]
         fstp qword ptr [a]
 
-        # push result onto stack
+        # push the result back onto the stack
         mov rax, qword ptr [a]
         push rax
 `
+
 }
 
-// genTan generates assembly code to pop a value from the stack,
-// run a tan-operation, and store the result back on the stack.
-func (c *Compiler) genTan() string {
+// genPlus generates assembly code to pop two values from the stack,
+// add them and store the result back on the stack.
+func (c *Compiler) genPlus() string {
+
 	return `
-        # pop one value
+        # pop two values
         pop rax
         mov qword ptr [a], rax
+        pop rax
+        mov qword ptr [b], rax
 
-        # tan
+        # add
         fld qword ptr [a]
-        fsincos
-        fdivr %st(0),st(1)
+        fadd qword ptr  [b]
         fstp qword ptr [a]
 
-        # push result onto stack
+        # push the result back onto the stack
         mov rax, qword ptr [a]
         push rax
 `
@@ -695,4 +613,86 @@ store_value_#ID:
 `
 
 	return (strings.Replace(text, "#ID", fmt.Sprintf("%d", i), -1))
+}
+
+// genPush generates assembly code to push a value upon the RPN stack.
+func (c *Compiler) genPush(value string) string {
+
+	text := `
+        fld qword ptr #VAL
+        fstp qword ptr [int]
+        mov rax, qword ptr [int]
+        push rax
+`
+
+	return (strings.Replace(text, "#VAL", c.escapeConstant(value), -1))
+}
+
+// genSin generates assembly code to pop a value from the stack,
+// run a sin-operation, and store the result back on the stack.
+func (c *Compiler) genSin() string {
+	return `
+        # pop one value
+        pop rax
+        mov qword ptr [a], rax
+
+        # sin
+        fld qword ptr [a]
+        fsin
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+}
+
+// genSwap generates assembly code to pop two values from the stack and
+// push them back, in the other order.
+func (c *Compiler) genSwap() string {
+	return `
+        pop rax
+        pop rbx
+        push rax
+        push rbx
+`
+}
+
+// genTan generates assembly code to pop a value from the stack,
+// run a tan-operation, and store the result back on the stack.
+func (c *Compiler) genTan() string {
+	return `
+        # pop one value
+        pop rax
+        mov qword ptr [a], rax
+
+        # tan
+        fld qword ptr [a]
+        fsincos
+        fdivr %st(0),st(1)
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
+}
+
+// genSqrt generates assembly code to pop a value from the stack,
+// run a square-root operation, and store the result back on the stack.
+func (c *Compiler) genSqrt() string {
+	return `
+        # pop one value
+        pop rax
+        mov qword ptr [a], rax
+
+        # sqrt
+        fld qword ptr [a]
+        fsqrt
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+`
 }
