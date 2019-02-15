@@ -358,39 +358,46 @@ main:
 	}
 
 	footer := `
-        # print the result
-        lea rdi,fmt
-        # get the value to print in xmm0
+        # [PRINT]
+        # Now we pop the last item from the stack, and print the result
+        # then we terminate cleanly.
         pop rax
         mov qword ptr [a], rax
         movq xmm0, [a]
-        # one argument
+        lea rdi,fmt
         movq rax, 1
         call printf
-
-        #
-        # If the user left rubbish on the stack then we could
-        # exit more cleanly via:
-        #
-        #   mov     rax, 1
-        #   xor     ebx, ebx
-        #   int     0x80
-        #
-        # Since that won't care about the broken return-address.
-        # That said I think we should probably assume the user knows
-        # their problem/program.
-        #
-
-        # clean and exit
-        pop	rbp
-        xor rax, rax
+        pop rbp
+        xor rax,rax
         ret
 
+
+#
+# This is hit when a division by zero is attempted.
+#
 division_by_zero:
         lea rdi,div_zero
+        jmp print_msg_and_exit
+
+#
+# This point is hit when there are insufficient operands upon the stack for
+# a given operation.  (For example '3 +', or '3 4 + /'.)
+#
+stack_error:
+        lea rdi,stack_err
+        # jmp print_msg_and_exit - JMP is unnecessary here.
+
+#
+# Print a message and terminate.
+#
+# NOTE: We call 'exit' here to allow stdout to be flushed.
+#
+print_msg_and_exit:
         xor rax, rax
         call printf
+        mov rdi,0
         call exit
+
 `
 
 	return header + body + footer, nil
