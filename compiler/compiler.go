@@ -394,7 +394,7 @@ stack_error:
 # NOTE: We call 'exit' here to allow stdout to be flushed.
 #
 print_msg_and_exit:
-        xor rax, rax
+        xor rax,rax
         call printf
         mov rdi,0
         call exit
@@ -435,6 +435,12 @@ func (c *Compiler) escapeConstant(input string) string {
 // run a cos-operation, and store the result back on the stack.
 func (c *Compiler) genCos() string {
 	return `
+        # [COS]
+        # ensure there are at least one argument on the stack
+        mov rax, qword ptr [depth]
+        cmp rax, 1
+        jb stack_error
+
         # pop one value
         pop rax
         mov qword ptr [a], rax
@@ -447,6 +453,8 @@ func (c *Compiler) genCos() string {
         # push result onto stack
         mov rax, qword ptr [a]
         push rax
+
+        # stack size didn't change; popped one, pushed one.
 `
 }
 
@@ -454,6 +462,12 @@ func (c *Compiler) genCos() string {
 // divide them and store the result back on the stack.
 func (c *Compiler) genDivide() string {
 	return `
+        # [DIVIDE]
+        # ensure there are at least two arguments on the stack
+        mov rax, qword ptr [depth]
+        cmp rax, 2
+        jb stack_error
+
         # pop two values
         pop rax
         cmp rax,0
@@ -470,6 +484,10 @@ func (c *Compiler) genDivide() string {
         # push the result back onto the stack
         mov rax, qword ptr [a]
         push rax
+
+        # we took two values from the stack, but added one
+        # so the net result is the stack shrunk by one.
+        dec qword ptr [depth]
 `
 
 }
@@ -478,9 +496,13 @@ func (c *Compiler) genDivide() string {
 // push it back twice - effectively duplicating it.
 func (c *Compiler) genDup() string {
 	return `
+        # [DUP]
         pop rax
         push rax
         push rax
+
+        # We've added a new entry to the stack.
+        inc qword ptr [depth]
 `
 }
 
@@ -520,6 +542,11 @@ func (c *Compiler) genMinus() string {
 // Note we truncate things to integers in this section of the code.
 func (c *Compiler) genModulus() string {
 	return `
+        # [MODULUS]
+        # ensure there are at least two arguments on the stack
+        mov rax, qword ptr [depth]
+        cmp rax, 2
+        jb stack_error
 
         # pop two values - rounding both to ints
         pop rax
@@ -547,6 +574,10 @@ func (c *Compiler) genModulus() string {
         fstp qword ptr [a]
         mov rax, qword ptr [a]
         push rax
+
+        # we took two values from the stack, but added one
+        # so the net result is the stack shrunk by one.
+        dec qword ptr [depth]
 `
 }
 
@@ -554,6 +585,12 @@ func (c *Compiler) genModulus() string {
 // multiply them and store the result back on the stack.
 func (c *Compiler) genMultiply() string {
 	return `
+        # [MULTIPLY]
+        # ensure there are at least two arguments on the stack
+        mov rax, qword ptr [depth]
+        cmp rax, 2
+        jb stack_error
+
         # pop two values
         pop rax
         mov qword ptr [a], rax
@@ -568,6 +605,10 @@ func (c *Compiler) genMultiply() string {
         # push the result back onto the stack
         mov rax, qword ptr [a]
         push rax
+
+        # we took two values from the stack, but added one
+        # so the net result is the stack shrunk by one.
+        dec qword ptr [depth]
 `
 
 }
@@ -613,6 +654,11 @@ func (c *Compiler) genPlus() string {
 //
 func (c *Compiler) genPower(i int) string {
 	text := `
+        # [POWER]
+        # ensure there is at least two arguments on the stack
+        mov rax, qword ptr [depth]
+        cmp rax, 2
+        jb stack_error
 
         # pop two values - rounding both to ints
         pop rax
@@ -670,6 +716,10 @@ store_value_#ID:
         # push the result back onto the stack
         mov rax, qword ptr [a]
         push rax
+
+        # we took two values from the stack, but added one
+        # so the net result is the stack shrunk by one.
+        dec qword ptr [depth]
 `
 
 	return (strings.Replace(text, "#ID", fmt.Sprintf("%d", i), -1))
@@ -758,6 +808,12 @@ func (c *Compiler) genTan() string {
 // run a square-root operation, and store the result back on the stack.
 func (c *Compiler) genSqrt() string {
 	return `
+        # [SQRT]
+        # ensure there are at least one argument on the stack
+        mov rax, qword ptr [depth]
+        cmp rax, 1
+        jb stack_error
+
         # pop one value
         pop rax
         mov qword ptr [a], rax
@@ -770,5 +826,7 @@ func (c *Compiler) genSqrt() string {
         # push result onto stack
         mov rax, qword ptr [a]
         push rax
+
+        # stack size didn't change; popped one, pushed one.
 `
 }
