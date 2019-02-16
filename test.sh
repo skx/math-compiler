@@ -22,7 +22,7 @@ test_compile() {
     # inspection if/when a test fails.
     #
     rm -f test.s test || true
-    go run main.go "${input}" > test.s
+    go run main.go -- "${input}" > test.s
     gcc -static -o ./test test.s
 
     #
@@ -115,6 +115,10 @@ test_compile '2 30 ^' 1.07374e+09
 test_compile '3 2 /' 1.5
 test_compile '5 2 /' 2.5
 
+# abs
+test_compile '3 abs' 3
+test_compile '3 9 - abs' 6
+test_compile '-3 abs' 3
 
 # sqrt
 test_compile '9 sqrt' 3

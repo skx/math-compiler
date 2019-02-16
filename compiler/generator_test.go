@@ -50,6 +50,7 @@ func TestGenerators(t *testing.T) {
 	c.genPower(1)
 
 	// complex
+	c.genAbs()
 	c.genCos()
 	c.genSin()
 	c.genSqrt()

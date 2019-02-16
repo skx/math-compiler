@@ -155,6 +155,11 @@ func (c *Compiler) InternalForm() {
 		//
 		switch t.Type {
 
+		case token.ABS:
+
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Type: instructions.Abs})
+
 		case token.ASTERISK:
 
 			c.instructions = append(c.instructions,
@@ -313,6 +318,9 @@ main:
 		// One-handler for each type: Alphabetical order.
 		//
 		switch opr.Type {
+
+		case instructions.Abs:
+			body += c.genAbs()
 
 		case instructions.Cos:
 			body += c.genCos()
