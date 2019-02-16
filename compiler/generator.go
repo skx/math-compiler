@@ -30,6 +30,33 @@ func (c *Compiler) escapeConstant(input string) string {
 	return val
 }
 
+// genAbs generates assembly code to pop a value from the stack,
+// run an ABS-operation, and store the result back on the stack.
+func (c *Compiler) genAbs() string {
+	return `
+        # [Abs]
+        # ensure there are at least one argument on the stack
+        mov rax, qword ptr [depth]
+        cmp rax, 1
+        jb stack_error
+
+        # pop one value
+        pop rax
+        mov qword ptr [a], rax
+
+        # abs
+        fld qword ptr [a]
+        fabs
+        fstp qword ptr [a]
+
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+
+        # stack size didn't change; popped one, pushed one.
+`
+}
+
 // genCos generates assembly code to pop a value from the stack,
 // run a cos-operation, and store the result back on the stack.
 func (c *Compiler) genCos() string {
