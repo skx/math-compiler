@@ -156,29 +156,3 @@ func TestFakeCoverage(t *testing.T) {
 	c.genDup()
 	c.genSwap()
 }
-
-// TestEscape tests excaping numbers to constants
-func TestEscape(t *testing.T) {
-
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{"3", "const_3"},
-		{"0.03", "const_0_03"},
-		{"-3", "const_neg_3"},
-		{"-3.3", "const_neg_3_3"},
-	}
-
-	for _, text := range tests {
-
-		c := New("")
-
-		got := c.escapeConstant(text.input)
-
-		if got != text.expected {
-			t.Errorf("Expected '%s' to become '%s', got '%s'",
-				text.input, text.expected, got)
-		}
-	}
-}
