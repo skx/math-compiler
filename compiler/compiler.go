@@ -269,6 +269,7 @@ func (c *Compiler) Output() (string, error) {
         int: .double 0.0
         fmt: .asciz "Result %g\n"
    div_zero: .asciz "Attempted division by zero.  Aborting\n"
+  stack_err: .asciz "Insufficient entries on the stack.  Aborting\n"
 `
 
 	//
@@ -487,6 +488,12 @@ func (c *Compiler) genDup() string {
 // subtract them and store the result back on the stack.
 func (c *Compiler) genMinus() string {
 	return `
+        # [MINUS]
+        # ensure there are at least two arguments on the stack
+        mov rax, qword ptr [depth]
+        cmp rax, 2
+        jb stack_error
+
         # pop two values
         pop rax
         mov qword ptr [a], rax
@@ -501,6 +508,10 @@ func (c *Compiler) genMinus() string {
         # push the result back onto the stack
         mov rax, qword ptr [a]
         push rax
+
+        # we took two values from the stack, but added one
+        # so the net result is the stack shrunk by one.
+        dec qword ptr [depth]
 `
 }
 
@@ -566,6 +577,12 @@ func (c *Compiler) genMultiply() string {
 func (c *Compiler) genPlus() string {
 
 	return `
+        # [PLUS]
+        # ensure there are at least two arguments on the stack
+        mov rax, qword ptr [depth]
+        cmp rax, 2
+        jb stack_error
+
         # pop two values
         pop rax
         mov qword ptr [a], rax
@@ -580,6 +597,10 @@ func (c *Compiler) genPlus() string {
         # push the result back onto the stack
         mov rax, qword ptr [a]
         push rax
+
+        # we took two values from the stack, but added one
+        # so the net result is the stack shrunk by one.
+        dec qword ptr [depth]
 `
 }
 
@@ -658,19 +679,33 @@ store_value_#ID:
 func (c *Compiler) genPush(value string) string {
 
 	text := `
-        fld qword ptr #VAL
+        # [PUSH]
+        # Load the value #VALUE onto the stack
+        # Increase the value stored at [depth] to note we've a new stack-entry
+        fld qword ptr #ESCAPED
         fstp qword ptr [int]
         mov rax, qword ptr [int]
         push rax
+        inc qword ptr [depth]
 `
 
-	return (strings.Replace(text, "#VAL", c.escapeConstant(value), -1))
+	// Allow the value and the escaped value to be expanded.
+	text = strings.Replace(text, "#VALUE", value, -1)
+	text = strings.Replace(text, "#ESCAPED", c.escapeConstant(value), -1)
+
+	return (text)
 }
 
 // genSin generates assembly code to pop a value from the stack,
 // run a sin-operation, and store the result back on the stack.
 func (c *Compiler) genSin() string {
 	return `
+        # [Sin]
+        # ensure there are at least one argument on the stack
+        mov rax, qword ptr [depth]
+        cmp rax, 1
+        jb stack_error
+
         # pop one value
         pop rax
         mov qword ptr [a], rax
@@ -683,6 +718,8 @@ func (c *Compiler) genSin() string {
         # push result onto stack
         mov rax, qword ptr [a]
         push rax
+
+        # stack size didn't change; popped one, pushed one.
 `
 }
 
