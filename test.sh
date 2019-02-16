@@ -22,7 +22,7 @@ test_compile() {
     # inspection if/when a test fails.
     #
     rm -f test.s test || true
-    go run main.go "${input}" > test.s
+    go run main.go -- "${input}" > test.s
     gcc -static -o ./test test.s
 
     #
