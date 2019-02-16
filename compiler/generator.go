@@ -14,12 +14,7 @@ import (
 func (c *Compiler) escapeConstant(input string) string {
 
 	// Convert "3.0" to "const_3.0"
-	s, err := strconv.ParseFloat(input, 32)
-
-	if err != nil {
-		fmt.Printf("Failed to parse '%s' into a float\n", input)
-		fmt.Printf("%s\n", err.Error())
-	}
+	s, _ := strconv.ParseFloat(input, 32)
 
 	var val string
 	if s < 0 {

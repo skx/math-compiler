@@ -49,6 +49,8 @@ func TestValidPrograms(t *testing.T) {
 		"4 cos",
 		"5 tan",
 		"10 sqrt",
+		"10 dup +",
+		"10 3 swap -",
 	}
 
 	for _, test := range tests {
@@ -122,5 +124,34 @@ func TestValidOutput(t *testing.T) {
 		if !strings.Contains(out, "main") {
 			t.Errorf("Our generated program looked .. bogus?")
 		}
+	}
+}
+
+// Test that enabling the debug-flag generates a trap instruction.
+func TestDebug(t *testing.T) {
+
+	test := `1 1 +`
+
+	c := New(test)
+	c.SetDebug(true)
+
+	// tokenize
+	err := c.Tokenize()
+	if err != nil {
+		t.Errorf("We didn't expect an error tokenizing a valid program, but found one %s", err.Error())
+	}
+
+	// convert to internal form
+	c.InternalForm()
+
+	// output the text
+	var out string
+	out, err = c.Output()
+	if err != nil {
+		t.Errorf("We didn't expect an error generating our assembly %s", err.Error())
+	}
+
+	if !strings.Contains(out, "int 03") {
+		t.Errorf("Debug trap not found!")
 	}
 }
