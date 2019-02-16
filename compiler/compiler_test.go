@@ -124,35 +124,3 @@ func TestValidOutput(t *testing.T) {
 		}
 	}
 }
-
-// TestFakeCoverage just calls the various generating methods, to ensure
-// they're covered.  Since there is no logic in them testing them is pretty
-// pointless.
-func TestFakeCoverage(t *testing.T) {
-
-	// create
-	c := New("2 3+")
-
-	// misc
-	c.genPush("3.4")
-
-	// simple
-	c.genPlus()
-	c.genMinus()
-	c.genMultiply()
-	c.genDivide()
-
-	// misc
-	c.genModulus()
-	c.genPower(1)
-
-	// complex
-	c.genCos()
-	c.genSin()
-	c.genSqrt()
-	c.genTan()
-
-	// stack
-	c.genDup()
-	c.genSwap()
-}
