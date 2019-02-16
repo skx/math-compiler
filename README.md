@@ -10,6 +10,7 @@ Because this is a simple project it provides only a small number of primitives:
 * `/` - Divide
 * `^` - Raise to a power
 * `%` - Modulus
+* `abs`
 * `sin`
 * `cos`
 * `tan`
