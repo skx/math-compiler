@@ -29,6 +29,7 @@ const (
 	POWER = "^"
 
 	// complex operations
+	ABS  = "abs"
 	COS  = "cos"
 	SIN  = "sin"
 	SQRT = "sqrt"
@@ -41,6 +42,7 @@ const (
 
 // reversed keywords
 var keywords = map[string]TokenType{
+	"abs":  ABS,
 	"cos":  COS,
 	"dup":  DUP,
 	"sin":  SIN,
