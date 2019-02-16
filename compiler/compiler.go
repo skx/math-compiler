@@ -101,7 +101,7 @@ func (c *Compiler) Tokenize() error {
 
 		// If error then abort.
 		if tok.Type == token.ERROR {
-			return (fmt.Errorf("Error parsing input; token.ERROR returned from the lexer"))
+			return (fmt.Errorf("Error parsing input; token.ERROR returned from the lexer: %s", tok.Literal))
 		}
 
 		// Otherwise append the token to our program.
