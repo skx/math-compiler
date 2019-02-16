@@ -26,6 +26,7 @@ const (
 	Modulus InstructionType = '%'
 
 	// complex operators that work with stack-numbers
+	Abs  InstructionType = 'a'
 	Sin  InstructionType = 's'
 	Cos  InstructionType = 'c'
 	Tan  InstructionType = 't'
