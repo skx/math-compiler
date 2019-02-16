@@ -1,4 +1,11 @@
-// instruction.go
+// Package instructions contains a series of types.
+//
+// We parse the program we're given into a series of tokens, then
+// later convert those tokens into an internal-form, using these
+// instructions.
+//
+// At generation time we emit a header, a footer, and a series of
+// snippets - one for each logical instruction.
 package instructions
 
 // The type of the instruction

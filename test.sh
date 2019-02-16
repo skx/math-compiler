@@ -8,6 +8,10 @@
 
 
 # Compile an expression and compare the result with a fixed value
+#
+# If the optional third argument is present, and non-empty, then we
+# return the full output from the execution. Otherwise just the last
+# token.
 test_compile() {
     input="$1"
     result="$2"
@@ -53,6 +57,11 @@ test_compile '20 4 2 / / '   10
 # Division by zero
 test_compile '3 4 /' '0.75'
 test_compile '3 0 /' 'Attempted division by zero.  Aborting' 'full'
+test_compile '3 5 5 - /' 'Attempted division by zero.  Aborting' 'full'
+
+# Missing arguments upon the stack
+test_compile '4 +' 'Insufficient entries on the stack.  Aborting' 'full'
+test_compile '3 sin -' 'Insufficient entries on the stack.  Aborting' 'full'
 
 # modulus
 test_compile  '1 4 %' 1

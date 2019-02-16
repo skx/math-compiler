@@ -43,6 +43,9 @@ func main() {
 	//
 	comp := compiler.New(flag.Args()[0])
 
+	//
+	// Are we inserting debugging "stuff" ?
+	//
 	if *debug {
 		comp.SetDebug(true)
 	}
@@ -61,7 +64,7 @@ func main() {
 	}
 
 	//
-	// Convert the tokens to their internal form.
+	// Convert the parsed-tokens to in internal-form.
 	//
 	comp.InternalForm()
 
@@ -77,7 +80,8 @@ func main() {
 	}
 
 	//
-	// If we're not compiling then we just write the program to STDOUT.
+	// If we're not compiling then we just write the program to STDOUT,
+	// then terminate.
 	//
 	if *compile == false {
 		fmt.Printf("%s", out)

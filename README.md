@@ -25,6 +25,12 @@ Despite this toy-functionality there is a lot going on, and we support:
    * `1 3 / 9 *`
 * Negative numbers work as you'd expect.
 
+Some errors will be caught at run-time, as the generated code has support for:
+
+* Detecting, and preventing, division by zero.
+* Detecting insufficient arguments being present upon the stack.
+  * For example this program is invalid `3 +`, because the addition operator requires two operands.  (i.e. `3 4 +`)
+
 
 # Installation
 

@@ -49,6 +49,8 @@ func TestValidPrograms(t *testing.T) {
 		"4 cos",
 		"5 tan",
 		"10 sqrt",
+		"10 dup +",
+		"10 3 swap -",
 	}
 
 	for _, test := range tests {
@@ -125,60 +127,31 @@ func TestValidOutput(t *testing.T) {
 	}
 }
 
-// TestFakeCoverage just calls the various generating methods, to ensure
-// they're covered.  Since there is no logic in them testing them is pretty
-// pointless.
-func TestFakeCoverage(t *testing.T) {
+// Test that enabling the debug-flag generates a trap instruction.
+func TestDebug(t *testing.T) {
 
-	// create
-	c := New("2 3+")
+	test := `1 1 +`
 
-	// misc
-	c.genPush("3.4")
+	c := New(test)
+	c.SetDebug(true)
 
-	// simple
-	c.genPlus()
-	c.genMinus()
-	c.genMultiply()
-	c.genDivide()
-
-	// misc
-	c.genModulus()
-	c.genPower(1)
-
-	// complex
-	c.genCos()
-	c.genSin()
-	c.genSqrt()
-	c.genTan()
-
-	// stack
-	c.genDup()
-	c.genSwap()
-}
-
-// TestEscape tests excaping numbers to constants
-func TestEscape(t *testing.T) {
-
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{"3", "const_3"},
-		{"0.03", "const_0_03"},
-		{"-3", "const_neg_3"},
-		{"-3.3", "const_neg_3_3"},
+	// tokenize
+	err := c.Tokenize()
+	if err != nil {
+		t.Errorf("We didn't expect an error tokenizing a valid program, but found one %s", err.Error())
 	}
 
-	for _, text := range tests {
+	// convert to internal form
+	c.InternalForm()
 
-		c := New("")
+	// output the text
+	var out string
+	out, err = c.Output()
+	if err != nil {
+		t.Errorf("We didn't expect an error generating our assembly %s", err.Error())
+	}
 
-		got := c.escapeConstant(text.input)
-
-		if got != text.expected {
-			t.Errorf("Expected '%s' to become '%s', got '%s'",
-				text.input, text.expected, got)
-		}
+	if !strings.Contains(out, "int 03") {
+		t.Errorf("Debug trap not found!")
 	}
 }

@@ -72,8 +72,13 @@ func (l *Lexer) NextToken() token.Token {
 			return l.readDecimal()
 		}
 
-		tok.Literal = l.readIdentifier()
-		tok.Type = token.LookupIdentifier(tok.Literal)
+		lit := l.readIdentifier()
+		tok.Type = token.LookupIdentifier(lit)
+		if tok.Type == token.ERROR {
+			tok.Literal = "Unknown token " + lit
+		} else {
+			tok.Literal = lit
+		}
 	}
 	l.readChar()
 	return tok
@@ -155,27 +160,8 @@ func isDigit(ch rune) bool {
 	return rune('0') <= ch && ch <= rune('9')
 }
 
-// readIdentifier is designed to read an identifier (name of variable,
-// function, etc).
-//
-// However there is a complication due to our historical implementation
-// of the standard library.  We really want to stop identifiers if we hit
-// a period, to allow method-calls to work on objects.
-//
-// So with input like this:
-//
-//   a.blah();
-//
-// Our identifier should be "a" (then we have a period, then a second
-// identifier "blah", followed by opening & closing parenthesis).
-//
-// However we also have to cover the case of:
-//
-//    string.toupper( "blah" );
-//    os.getenv( "PATH" );
-//    ..
-//
-// So we have a horrid implementation..
+// readIdentifier is designed to read an identifier which means a string
+// such as `sin`, `cos`, `tan`.
 func (l *Lexer) readIdentifier() string {
 
 	id := ""
@@ -188,7 +174,6 @@ func (l *Lexer) readIdentifier() string {
 		l.readChar()
 	}
 
-	// And now our pain is over.
 	return id
 }
 

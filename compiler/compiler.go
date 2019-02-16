@@ -23,8 +23,6 @@ package compiler
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/skx/math-compiler/instructions"
 	"github.com/skx/math-compiler/lexer"
@@ -103,7 +101,7 @@ func (c *Compiler) Tokenize() error {
 
 		// If error then abort.
 		if tok.Type == token.ERROR {
-			return (fmt.Errorf("Error parsing input; token.ERROR returned from the lexer"))
+			return (fmt.Errorf("Error parsing input; token.ERROR returned from the lexer: %s", tok.Literal))
 		}
 
 		// Otherwise append the token to our program.
@@ -239,17 +237,37 @@ func (c *Compiler) Output() (string, error) {
 	// The header.
 	//
 	header := `
+#
+# This assembly file was created by math-compiler.
+#
+# We're going to use Intel Syntax, because that is what I grew up with.
+#
 .intel_syntax noprefix
 .global main
 
-# Data-section: Contains the format-string for our output message,
-#               etc.
+# Data-section:
+#
+# This contains data for the program at run-time.
+#
+#    int: is used to push values onto the stack.
+#
+#      a: used as an argument for functions that require one/two operands.
+#
+#      b: used as an argument for functions that require two operands.
+#
+#  depth: used to keep track of stack-depth.
+#
+#    fmt: Used to output the result of the calculation, and div_zero for
+#         the obvious error-case.
+#
 .data
-        int: .double 0.0
           a: .double 0.0
           b: .double 0.0
+      depth: .double 0.0
+        int: .double 0.0
         fmt: .asciz "Result %g\n"
    div_zero: .asciz "Attempted division by zero.  Aborting\n"
+  stack_err: .asciz "Insufficient entries on the stack.  Aborting\n"
 `
 
 	//
@@ -260,11 +278,26 @@ func (c *Compiler) Output() (string, error) {
 			c.escapeConstant(v), v)
 	}
 
-	header += `main:
-push rbp
+	header += `
+#
+# Main is our entry-point.
+#
+# We'll save rbp before we begin
+main:
+        push rbp
+
+        # Our stack is initially empty (of numbers), so ensure that [depth]
+        # is set to zero.
+        # Every time we push a value upon the stack we'll increase this value
+        # and before we pop arguments from the stack we'll check there are
+        # sufficient values stored.  This will prevent segfaults when user
+        # programs are broken.
+        mov qword ptr [depth], 0
+
 `
 	if c.debug {
-		header += "int 03\n"
+		header += "        # Debug-break\n"
+		header += "        int 03\n"
 	}
 
 	//
@@ -272,14 +305,12 @@ push rbp
 	//
 	body := ""
 
-	//
-	// Now we walk over our form.
-	//
+	// Now we walk over our internal-representation, and output
+	// a chunk of assembly for each of our operator-types.
 	for i, opr := range c.instructions {
 
 		//
-		// We'll output a different chunk of asm for each
-		// of our instructions.
+		// One-handler for each type: Alphabetical order.
 		//
 		switch opr.Type {
 
@@ -326,373 +357,50 @@ push rbp
 	}
 
 	footer := `
+        # [PRINT]
+        # ensure there are at least one argument on the stack
+        mov rax, qword ptr [depth]
+        cmp rax, 1
+        jb stack_error
         # print the result
-        lea rdi,fmt
-        # get the value to print in xmm0
         pop rax
         mov qword ptr [a], rax
-        movq xmm0, [a]
-        # one argument
-        movq rax, 1
+        lea rdi,fmt             # format string
+        movq xmm0, [a]          # argument
+        movq rax, 1             # argument count
         call printf
-
-        #
-        # If the user left rubbish on the stack then we could
-        # exit more cleanly via:
-        #
-        #   mov     rax, 1
-        #   xor     ebx, ebx
-        #   int     0x80
-        #
-        # Since that won't care about the broken return-address.
-        # That said I think we should probably assume the user knows
-        # their problem/program.
-        #
-
-        # clean and exit
-        pop	rbp
-        xor rax, rax
+        pop rbp
+        xor rax,rax
         ret
 
+
+#
+# This is hit when a division by zero is attempted.
+#
 division_by_zero:
         lea rdi,div_zero
-        xor rax, rax
+        jmp print_msg_and_exit
+
+#
+# This point is hit when there are insufficient operands upon the stack for
+# a given operation.  (For example '3 +', or '3 4 + /'.)
+#
+stack_error:
+        lea rdi,stack_err
+        # jmp print_msg_and_exit - JMP is unnecessary here.
+
+#
+# Print a message and terminate.
+#
+# NOTE: We call 'exit' here to allow stdout to be flushed.
+#
+print_msg_and_exit:
+        xor rax,rax
         call printf
+        mov rdi,0
         call exit
+
 `
 
 	return header + body + footer, nil
-}
-
-// escapeConstant converts a floating-point number such as
-// "1.2", or "-1.3" into a constant value that can be embedded
-// safely into our generated assembly-language file.
-func (c *Compiler) escapeConstant(input string) string {
-
-	// Convert "3.0" to "const_3.0"
-	s, err := strconv.ParseFloat(input, 32)
-
-	if err != nil {
-		fmt.Printf("Failed to parse '%s' into a float\n", input)
-		fmt.Printf("%s\n", err.Error())
-	}
-
-	var val string
-	if s < 0 {
-		val = fmt.Sprintf("const_neg_%s", input)
-	} else {
-		val = fmt.Sprintf("const_%s", input)
-	}
-
-	// remove periods
-	val = strings.Replace(val, ".", "_", -1)
-	// remove minus-signs
-	val = strings.Replace(val, "-", "", -1)
-	return val
-}
-
-// genPush generates assembly code to push a value upon the RPN stack.
-func (c *Compiler) genPush(value string) string {
-
-	text := `
-        fld qword ptr #VAL
-        fstp qword ptr [int]
-        mov rax, qword ptr [int]
-        push rax
-`
-
-	return (strings.Replace(text, "#VAL", c.escapeConstant(value), -1))
-}
-
-// genPlus generates assembly code to pop two values from the stack,
-// add them and store the result back on the stack.
-func (c *Compiler) genPlus() string {
-
-	return `
-        # pop two values
-        pop rax
-        mov qword ptr [a], rax
-        pop rax
-        mov qword ptr [b], rax
-
-        # add
-        fld qword ptr [a]
-        fadd qword ptr  [b]
-        fstp qword ptr [a]
-
-        # push the result back onto the stack
-        mov rax, qword ptr [a]
-        push rax
-`
-}
-
-// genMinus generates assembly code to pop two values from the stack,
-// subtract them and store the result back on the stack.
-func (c *Compiler) genMinus() string {
-	return `
-        # pop two values
-        pop rax
-        mov qword ptr [a], rax
-        pop rax
-        mov qword ptr [b], rax
-
-        # sub
-        fld qword ptr [b]
-        fsub qword ptr  [a]
-        fstp qword ptr [a]
-
-        # push the result back onto the stack
-        mov rax, qword ptr [a]
-        push rax
-`
-}
-
-// genMultiply generates assembly code to pop two values from the stack,
-// multiply them and store the result back on the stack.
-func (c *Compiler) genMultiply() string {
-	return `
-        # pop two values
-        pop rax
-        mov qword ptr [a], rax
-        pop rax
-        mov qword ptr [b], rax
-
-        # multiply
-        fld qword ptr [a]
-        fmul qword ptr  [b]
-        fstp qword ptr [a]
-
-        # push the result back onto the stack
-        mov rax, qword ptr [a]
-        push rax
-`
-
-}
-
-// genModulus generates assembly code to pop two values from the stack,
-// perform a modulus-operation and store the result back on the stack.
-// Note we truncate things to integers in this section of the code.
-func (c *Compiler) genModulus() string {
-	return `
-
-        # pop two values - rounding both to ints
-        pop rax
-        mov qword ptr [a], rax
-        fld qword ptr [a]
-        frndint
-        fistp qword ptr [a]
-
-        pop rax
-        mov qword ptr [b], rax
-        fld qword ptr [b]
-        frndint
-        fistp qword ptr [b]
-
-        # now we do the modulus-magic.
-        mov rax, qword ptr [b]
-        mov rbx, qword ptr [a]
-        xor rdx, rdx
-        cqo
-        div rbx
-
-        # store the result from 'rdx'.
-        mov qword ptr[a], rdx
-        fild qword ptr [a]
-        fstp qword ptr [a]
-        mov rax, qword ptr [a]
-        push rax
-`
-}
-
-// genDivide generates assembly code to pop two values from the stack,
-// divide them and store the result back on the stack.
-func (c *Compiler) genDivide() string {
-	return `
-        # pop two values
-        pop rax
-        cmp rax,0
-        je division_by_zero
-        mov qword ptr [a], rax
-        pop rax
-        mov qword ptr [b], rax
-
-        # divide
-        fld qword ptr [b]
-        fdiv qword ptr  [a]
-        fstp qword ptr [a]
-
-        # push the result back onto the stack
-        mov rax, qword ptr [a]
-        push rax
-`
-
-}
-
-// genDup generates assembly code to pop a value from the stack and
-// push it back twice - effectively duplicating it.
-func (c *Compiler) genDup() string {
-	return `
-        pop rax
-        push rax
-        push rax
-`
-}
-
-// genSqrt generates assembly code to pop a value from the stack,
-// run a square-root operation, and store the result back on the stack.
-func (c *Compiler) genSqrt() string {
-	return `
-        # pop one value
-        pop rax
-        mov qword ptr [a], rax
-
-        # sqrt
-        fld qword ptr [a]
-        fsqrt
-        fstp qword ptr [a]
-
-        # push result onto stack
-        mov rax, qword ptr [a]
-        push rax
-`
-}
-
-// genSin generates assembly code to pop a value from the stack,
-// run a sin-operation, and store the result back on the stack.
-func (c *Compiler) genSin() string {
-	return `
-        # pop one value
-        pop rax
-        mov qword ptr [a], rax
-
-        # sin
-        fld qword ptr [a]
-        fsin
-        fstp qword ptr [a]
-
-        # push result onto stack
-        mov rax, qword ptr [a]
-        push rax
-`
-}
-
-// genSwap generates assembly code to pop two values from the stack and
-// push them back, in the other order.
-func (c *Compiler) genSwap() string {
-	return `
-        pop rax
-        pop rbx
-        push rax
-        push rbx
-`
-}
-
-// genCos generates assembly code to pop a value from the stack,
-// run a cos-operation, and store the result back on the stack.
-func (c *Compiler) genCos() string {
-	return `
-        # pop one value
-        pop rax
-        mov qword ptr [a], rax
-
-        # cos
-        fld qword ptr [a]
-        fcos
-        fstp qword ptr [a]
-
-        # push result onto stack
-        mov rax, qword ptr [a]
-        push rax
-`
-}
-
-// genTan generates assembly code to pop a value from the stack,
-// run a tan-operation, and store the result back on the stack.
-func (c *Compiler) genTan() string {
-	return `
-        # pop one value
-        pop rax
-        mov qword ptr [a], rax
-
-        # tan
-        fld qword ptr [a]
-        fsincos
-        fdivr %st(0),st(1)
-        fstp qword ptr [a]
-
-        # push result onto stack
-        mov rax, qword ptr [a]
-        push rax
-`
-}
-
-// genPower generates assembly code to pop two values from the stack,
-// perform a power-raising and store the result back on the stack.
-//
-// Note we truncate things to integers in this section of the code.
-//
-// Note we do some comparisions here, and need to generate some (unique) labels
-//
-func (c *Compiler) genPower(i int) string {
-	text := `
-
-        # pop two values - rounding both to ints
-        pop rax
-        mov qword ptr [a], rax
-        fld qword ptr [a]
-        frndint
-        fistp qword ptr [a]
-
-        pop rax
-        mov qword ptr [b], rax
-        fld qword ptr [b]
-        frndint
-        fistp qword ptr [b]
-
-        # get the two values
-        mov rax, qword ptr [b]
-        mov rbx, qword ptr [a]
-
-        # if the power is 0 we return zero
-        cmp rbx, 0
-        jne none_zero_#ID
-           # store zero
-           fldz
-           jmp store_value_#ID
-
-none_zero_#ID:
-
-        # if the power is 1 we return the original value
-        cmp rbx, 1
-        jne none_one_#ID
-           mov qword ptr[a], rax
-           fild qword ptr [a]
-           jmp store_value_#ID
-
-none_one_#ID:
-        # here we have rax having a value
-        # and we have rbx having the power to raise
-        mov rcx, rax   # save the value
-
-        # decrease the power by one.
-        dec rbx
-again_#ID:
-           # rax = rax * rcx (which is the original value we started with)
-           imul rax,rcx
-           dec rbx
-           jnz again_#ID
-
-        mov qword ptr[a], rax
-        fild qword ptr [a]
-
-store_value_#ID:
-
-        fstp qword ptr [a]
-
-        # push the result back onto the stack
-        mov rax, qword ptr [a]
-        push rax
-`
-
-	return (strings.Replace(text, "#ID", fmt.Sprintf("%d", i), -1))
 }

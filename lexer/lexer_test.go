@@ -34,7 +34,7 @@ func TestParseNumbers(t *testing.T) {
 
 // Trivial test of parsing floats.
 func TestParseFloats(t *testing.T) {
-	input := `3.14 4.3 -1.7 -2.13`
+	input := `3.14 4.3 -1.7 -2.13 sin `
 
 	tests := []struct {
 		expectedType    token.TokenType
@@ -44,13 +44,14 @@ func TestParseFloats(t *testing.T) {
 		{token.NUMBER, "4.3"},
 		{token.NUMBER, "-1.7"},
 		{token.NUMBER, "-2.13"},
+		{token.SIN, "sin"},
 		{token.EOF, ""},
 	}
 	l := New(input)
 	for i, tt := range tests {
 		tok := l.NextToken()
 		if tok.Type != tt.expectedType {
-			t.Fatalf("tests[%d] - tokentype wrong, expected=%q, got=%q", i, tt.expectedType, tok.Type)
+			t.Fatalf("tests[%d] - tokentype wrong, expected=%q, got=%q", i, tt.expectedType, tok)
 		}
 		if tok.Literal != tt.expectedLiteral {
 			t.Fatalf("tests[%d] - Literal wrong, expected=%q, got=%q", i, tt.expectedLiteral, tok.Literal)
@@ -95,7 +96,7 @@ func TestParseBogus(t *testing.T) {
 		expectedType    token.TokenType
 		expectedLiteral string
 	}{
-		{token.ERROR, "steve"},
+		{token.ERROR, "Unknown token steve"},
 		{token.NUMBER, "3"},
 		{token.EOF, ""},
 	}
