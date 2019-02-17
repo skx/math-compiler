@@ -1,3 +1,7 @@
+[![Travis CI](https://img.shields.io/travis/skx/math-compiler/master.svg?style=flat-square)](https://travis-ci.org/skx/puppet-summary)
+[![Go Report Card](https://goreportcard.com/badge/github.com/skx/math-compiler)](https://goreportcard.com/report/github.com/skx/puppet-summary)
+[![license](https://img.shields.io/github/license/skx/math-compiler.svg)](https://github.com/skx/puppet-summary/blob/master/LICENSE)
+
 # math-compiler
 
 This project contains the simplest possible compiler, which converts mathematical operations into assembly language, allowing all the speed in your sums!
