@@ -51,37 +51,17 @@ func main() {
 	}
 
 	//
-	// Parse the program into a series of statements, etc.
+	// Compile
 	//
-	// At this point there might be errors.  If so report them,
-	// and terminate.
-	//
-	err := comp.Tokenize()
+	out, err := comp.Compile()
 	if err != nil {
-		fmt.Printf("There was an error compiling the input expression:\n")
-		fmt.Printf("%s\n", err.Error())
+		fmt.Printf("Error compiling: %s\n", err.Error())
 		os.Exit(1)
 	}
 
 	//
-	// Convert the parsed-tokens to in internal-form.
-	//
-	comp.InternalForm()
-
-	//
-	// Now generate the output assembly
-	//
-	var out string
-	out, err = comp.Output()
-	if err != nil {
-		fmt.Printf("Error generating output from program:\n")
-		fmt.Printf("%s\n", err.Error())
-		os.Exit(1)
-	}
-
-	//
-	// If we're not compiling then we just write the program to STDOUT,
-	// then terminate.
+	// If we're not compiling the assembly language text which was
+	// produced then we just write the program to STDOUT, and terminate.
 	//
 	if *compile == false {
 		fmt.Printf("%s", out)

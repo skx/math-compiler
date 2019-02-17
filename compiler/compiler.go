@@ -85,7 +85,29 @@ func (c *Compiler) SetDebug(val bool) {
 // Compile converts the input program into a collection of
 // AMD64-assembly language.
 func (c *Compiler) Compile() (string, error) {
-	return "", nil
+
+	//
+	// Parse the program into a series of statements, etc.
+	//
+	// At this point there might be errors.  If so report them,
+	// and terminate.
+	//
+	err := c.tokenize()
+	if err != nil {
+		return "", err
+	}
+
+	//
+	// Convert the parsed-tokens to in internal-form.
+	//
+	c.makeinternalform()
+
+	//
+	// Now generate the output assembly
+	//
+	out := c.output()
+
+	return out, nil
 }
 
 // tokenize populates our internal list of tokens, as a result of
