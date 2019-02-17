@@ -1,6 +1,6 @@
-[![Travis CI](https://img.shields.io/travis/skx/math-compiler/master.svg?style=flat-square)](https://travis-ci.org/skx/puppet-summary)
-[![Go Report Card](https://goreportcard.com/badge/github.com/skx/math-compiler)](https://goreportcard.com/report/github.com/skx/puppet-summary)
-[![license](https://img.shields.io/github/license/skx/math-compiler.svg)](https://github.com/skx/puppet-summary/blob/master/LICENSE)
+[![Travis CI](https://img.shields.io/travis/skx/math-compiler/master.svg?style=flat-square)](https://travis-ci.org/skx/math-compiler)
+[![Go Report Card](https://goreportcard.com/badge/github.com/skx/math-compiler)](https://goreportcard.com/report/github.com/skx/math-compiler)
+[![license](https://img.shields.io/github/license/skx/math-compiler.svg)](https://github.com/skx/math-compiler/blob/master/LICENSE)
 
 # math-compiler
 
