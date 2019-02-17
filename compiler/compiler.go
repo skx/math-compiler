@@ -106,7 +106,7 @@ func (c *Compiler) Tokenize() error {
 		}
 
 		//
-		// We'll convert "pi" into a number as a special case.
+		// We'll convert "pi" and "e" into numbers as a special case.
 		//
 		if tok.Type == token.PI {
 			tok.Type = token.NUMBER
