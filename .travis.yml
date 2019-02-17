@@ -1,0 +1,15 @@
+language: go
+sudo: false
+
+matrix:
+  include:
+    - go: tip
+  allow_failures:
+    - go: tip
+
+script:
+    - go get ./..
+    - go build .
+    - ./test.sh
+    - go get golang.org/x/tools/cmd/cover
+    - go test -coverprofile fmt
