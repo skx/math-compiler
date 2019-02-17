@@ -51,6 +51,9 @@ func TestValidPrograms(t *testing.T) {
 		"10 sqrt",
 		"10 dup +",
 		"10 3 swap -",
+		"pi pi *",
+		"e pi *",
+		"-2 abs",
 	}
 
 	for _, test := range tests {
@@ -68,6 +71,37 @@ func TestValidPrograms(t *testing.T) {
 
 		// output the text
 		_ = c.output()
+	}
+}
+
+// Test some valid programs, with the shortcut
+func TestValidProgramsShortcut(t *testing.T) {
+
+	tests := []string{
+		"1 2 -",
+		"3 4 +",
+		"5 7 *",
+		"9 3 /",
+		"10 5 %",
+		"2 8 ^",
+		"3 sin",
+		"4 cos",
+		"5 tan",
+		"10 sqrt",
+		"10 dup +",
+		"10 3 swap -",
+		"pi pi *",
+		"e pi *",
+		"-2 abs",
+	}
+
+	for _, test := range tests {
+
+		c := New(test)
+		_, err := c.Compile()
+		if err != nil {
+			t.Errorf("Unexpected error compiling program: %s", err.Error())
+		}
 	}
 }
 
