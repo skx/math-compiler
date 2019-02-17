@@ -1,15 +1,12 @@
-// compiler contains our simple compiler.
+// The compiler-package contains the core of our compiler.
 //
-// In brief it uses the lexer to tokenize the expression, then we convert
-// that series of tokens into an "internal representation" which is pretty
-// much things like:
+// In brief we go through a three-step process:
 //
-//    push_int 3
-//    push_int 4
-//    Add
+//  1.  It use the lexer to tokenize the expression.
 //
-// We iterate over this simple representation and output a block of code
-// for each.
+//  2.  Convert our program from a series of tokens to an internal form.
+//
+//  3.  Walk our internal form, generating output for each block.
 //
 // There are only one minor complication - storing all the input-floats
 // in the data-area of the program.  These require escaping for uniqueness
@@ -65,6 +62,15 @@ type Compiler struct {
 	instructions []instructions.Instruction
 }
 
+//
+// Our public API consists of the three functions:
+//  New
+//  SetDebug
+//  Compile
+//
+// The rest of the code is an implementation detail.
+//
+
 // New creates a new compiler, given the expression in the constructor.
 func New(input string) *Compiler {
 	c := &Compiler{expression: input, constants: make(map[string]bool), debug: false}
@@ -76,12 +82,18 @@ func (c *Compiler) SetDebug(val bool) {
 	c.debug = val
 }
 
-// Tokenize populates our internal list of tokens, as a result of
+// Compile converts the input program into a collection of
+// AMD64-assembly language.
+func (c *Compiler) Compile() (string, error) {
+	return "", nil
+}
+
+// tokenize populates our internal list of tokens, as a result of
 // lexing the input string.
 //
 // There is some error-handling to ensure that the program looks
 // somewhat reasonable.
-func (c *Compiler) Tokenize() error {
+func (c *Compiler) tokenize() error {
 
 	//
 	// Create the lexer, which will parse our expression.
@@ -152,11 +164,11 @@ func (c *Compiler) Tokenize() error {
 	return nil
 }
 
-// InternalForm converts our series of tokens (i.e. the lexed expression) into
-// an an intermediary form, collecting constants as they are discovered.
+// makeinternalform converts our series of tokens (i.e. the lexed expression)
+// into an an intermediary form, collecting constants as they are discovered.
 //
 // This is the middle-step before generating our assembly-language program.
-func (c *Compiler) InternalForm() {
+func (c *Compiler) makeinternalform() {
 
 	//
 	// Walk our tokens.
@@ -248,8 +260,9 @@ func (c *Compiler) InternalForm() {
 
 }
 
-// Output writes our program to stdout
-func (c *Compiler) Output() (string, error) {
+// output generates the output, joining a header, a footer, and the
+// writes our program to stdout
+func (c *Compiler) output() string {
 
 	//
 	// The header.
@@ -423,5 +436,5 @@ print_msg_and_exit:
 
 `
 
-	return header + body + footer, nil
+	return header + body + footer
 }

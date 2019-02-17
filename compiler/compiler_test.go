@@ -28,7 +28,7 @@ func TestBogusInput(t *testing.T) {
 
 	for _, test := range tests {
 		c := New(test)
-		err := c.Tokenize()
+		err := c.tokenize()
 		if err == nil {
 			t.Errorf("We expected an error handling '%s', but got none!", test)
 		}
@@ -58,19 +58,16 @@ func TestValidPrograms(t *testing.T) {
 		c := New(test)
 
 		// tokenize
-		err := c.Tokenize()
+		err := c.tokenize()
 		if err != nil {
 			t.Errorf("We didn't expect an error tokenizing a valid program, but found one %s", err.Error())
 		}
 
 		// convert to internal form
-		c.InternalForm()
+		c.makeinternalform()
 
 		// output the text
-		_, err = c.Output()
-		if err != nil {
-			t.Errorf("We didn't expect an error generating our assembly %s", err.Error())
-		}
+		_ = c.output()
 	}
 }
 
@@ -108,17 +105,13 @@ func TestValidOutput(t *testing.T) {
 		c := New(test)
 
 		// compile
-		err := c.Tokenize()
+		err := c.tokenize()
 		if err != nil {
 			t.Errorf("We didn't expect an error compiling a valid program, but found one %s", err.Error())
 		}
 
 		// output
-		out := ""
-		out, err = c.Output()
-		if err != nil {
-			t.Errorf("We didn't expect an error outputing a valid program, but found one %s", err.Error())
-		}
+		out := c.output()
 
 		// sanity-check
 		if !strings.Contains(out, "main") {
@@ -136,17 +129,16 @@ func TestDebug(t *testing.T) {
 	c.SetDebug(true)
 
 	// tokenize
-	err := c.Tokenize()
+	err := c.tokenize()
 	if err != nil {
 		t.Errorf("We didn't expect an error tokenizing a valid program, but found one %s", err.Error())
 	}
 
 	// convert to internal form
-	c.InternalForm()
+	c.makeinternalform()
 
 	// output the text
-	var out string
-	out, err = c.Output()
+	out := c.output()
 	if err != nil {
 		t.Errorf("We didn't expect an error generating our assembly %s", err.Error())
 	}
