@@ -28,7 +28,7 @@ func TestBogusInput(t *testing.T) {
 
 	for _, test := range tests {
 		c := New(test)
-		err := c.Tokenize()
+		err := c.tokenize()
 		if err == nil {
 			t.Errorf("We expected an error handling '%s', but got none!", test)
 		}
@@ -51,6 +51,9 @@ func TestValidPrograms(t *testing.T) {
 		"10 sqrt",
 		"10 dup +",
 		"10 3 swap -",
+		"pi pi *",
+		"e pi *",
+		"-2 abs",
 	}
 
 	for _, test := range tests {
@@ -58,18 +61,46 @@ func TestValidPrograms(t *testing.T) {
 		c := New(test)
 
 		// tokenize
-		err := c.Tokenize()
+		err := c.tokenize()
 		if err != nil {
 			t.Errorf("We didn't expect an error tokenizing a valid program, but found one %s", err.Error())
 		}
 
 		// convert to internal form
-		c.InternalForm()
+		c.makeinternalform()
 
 		// output the text
-		_, err = c.Output()
+		_ = c.output()
+	}
+}
+
+// Test some valid programs, with the shortcut
+func TestValidProgramsShortcut(t *testing.T) {
+
+	tests := []string{
+		"1 2 -",
+		"3 4 +",
+		"5 7 *",
+		"9 3 /",
+		"10 5 %",
+		"2 8 ^",
+		"3 sin",
+		"4 cos",
+		"5 tan",
+		"10 sqrt",
+		"10 dup +",
+		"10 3 swap -",
+		"pi pi *",
+		"e pi *",
+		"-2 abs",
+	}
+
+	for _, test := range tests {
+
+		c := New(test)
+		_, err := c.Compile()
 		if err != nil {
-			t.Errorf("We didn't expect an error generating our assembly %s", err.Error())
+			t.Errorf("Unexpected error compiling program: %s", err.Error())
 		}
 	}
 }
@@ -108,17 +139,13 @@ func TestValidOutput(t *testing.T) {
 		c := New(test)
 
 		// compile
-		err := c.Tokenize()
+		err := c.tokenize()
 		if err != nil {
 			t.Errorf("We didn't expect an error compiling a valid program, but found one %s", err.Error())
 		}
 
 		// output
-		out := ""
-		out, err = c.Output()
-		if err != nil {
-			t.Errorf("We didn't expect an error outputing a valid program, but found one %s", err.Error())
-		}
+		out := c.output()
 
 		// sanity-check
 		if !strings.Contains(out, "main") {
@@ -136,17 +163,16 @@ func TestDebug(t *testing.T) {
 	c.SetDebug(true)
 
 	// tokenize
-	err := c.Tokenize()
+	err := c.tokenize()
 	if err != nil {
 		t.Errorf("We didn't expect an error tokenizing a valid program, but found one %s", err.Error())
 	}
 
 	// convert to internal form
-	c.InternalForm()
+	c.makeinternalform()
 
 	// output the text
-	var out string
-	out, err = c.Output()
+	out := c.output()
 	if err != nil {
 		t.Errorf("We didn't expect an error generating our assembly %s", err.Error())
 	}
