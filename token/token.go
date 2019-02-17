@@ -28,6 +28,10 @@ const (
 	MOD   = "%"
 	POWER = "^"
 
+	// misc
+	E  = "e"
+	PI = "pi"
+
 	// complex operations
 	ABS  = "abs"
 	COS  = "cos"
@@ -45,6 +49,8 @@ var keywords = map[string]TokenType{
 	"abs":  ABS,
 	"cos":  COS,
 	"dup":  DUP,
+	"e":    E,
+	"pi":   PI,
 	"sin":  SIN,
 	"sqrt": SQRT,
 	"swap": SWAP,

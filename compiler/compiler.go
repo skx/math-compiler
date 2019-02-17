@@ -23,6 +23,7 @@ package compiler
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/skx/math-compiler/instructions"
 	"github.com/skx/math-compiler/lexer"
@@ -102,6 +103,18 @@ func (c *Compiler) Tokenize() error {
 		// If error then abort.
 		if tok.Type == token.ERROR {
 			return (fmt.Errorf("Error parsing input; token.ERROR returned from the lexer: %s", tok.Literal))
+		}
+
+		//
+		// We'll convert "pi" into a number as a special case.
+		//
+		if tok.Type == token.PI {
+			tok.Type = token.NUMBER
+			tok.Literal = fmt.Sprintf("%f", math.Pi)
+		}
+		if tok.Type == token.E {
+			tok.Type = token.NUMBER
+			tok.Literal = fmt.Sprintf("%f", math.E)
 		}
 
 		// Otherwise append the token to our program.
