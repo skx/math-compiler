@@ -321,6 +321,7 @@ func (c *Compiler) output() string {
         fmt: .asciz "Result %g\n"
    div_zero: .asciz "Attempted division by zero.  Aborting\n"
   stack_err: .asciz "Insufficient entries on the stack.  Aborting\n"
+ stack_full: .asciz "Too many entries remaining on the stack.  Aborting\n"
 `
 
 	//
@@ -414,10 +415,10 @@ main:
 
 	footer := `
         # [PRINT]
-        # ensure there are at least one argument on the stack
+        # ensure there is only one remaining argument upon the stack
         mov rax, qword ptr [depth]
         cmp rax, 1
-        jb stack_error
+        jne stack_too_full      # should be only one entry.
         # print the result
         pop rax
         mov qword ptr [a], rax
@@ -437,6 +438,16 @@ division_by_zero:
         lea rdi,div_zero
         jmp print_msg_and_exit
 
+
+#
+# This point is hit when the program is due to terminate, but the
+# stack has too many entries upon it.
+#
+stack_too_full:
+        lea rdi,stack_full
+        jmp print_msg_and_exit
+
+#
 #
 # This point is hit when there are insufficient operands upon the stack for
 # a given operation.  (For example '3 +', or '3 4 + /'.)

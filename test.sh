@@ -63,6 +63,10 @@ test_compile '3 5 5 - /' 'Attempted division by zero.  Aborting' 'full'
 test_compile '4 +' 'Insufficient entries on the stack.  Aborting' 'full'
 test_compile '3 sin -' 'Insufficient entries on the stack.  Aborting' 'full'
 
+# Too many arguments on the stack
+test_compile '3 3 3 +' 'Too many entries remaining on the stack.  Aborting'  'full'
+
+
 # modulus
 test_compile  '1 4 %' 1
 test_compile  '2 4 %' 2
