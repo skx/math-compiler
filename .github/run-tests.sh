@@ -1,6 +1,8 @@
 #!/bin/sh
 
 
+pwd
+ls -l
 # Run golang tests
 go test ./...
 
