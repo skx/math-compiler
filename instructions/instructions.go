@@ -8,33 +8,62 @@
 // snippets - one for each logical instruction.
 package instructions
 
-// The type of the instruction
+// InstructionType holds the type of the instruction.
 type InstructionType byte
 
 const (
-	// setup: push number on stack
+	// Push is used to generate code to push a number onto the stack.
 	Push InstructionType = 'p'
 
-	// simple operators that work with stack-numbers
-	Plus     InstructionType = '+'
-	Minus    InstructionType = '-'
-	Multiply InstructionType = '*'
-	Divide   InstructionType = '/'
+	// Plus means to pop two items from the stack and push the result
+	// of adding them.
+	Plus InstructionType = '+'
 
-	// medium operators that work with stack-numbers
-	Power   InstructionType = '^'
+	// Minus means to pop two items from the stack and push the result
+	// of subtracting them.
+	Minus InstructionType = '-'
+
+	// Multiply means to pop two items from the stack and push the result
+	// of multiplying them.
+	Multiply InstructionType = '*'
+
+	// Divide means to pop two items from the stack and push the result
+	// of dividing them.
+	Divide InstructionType = '/'
+
+	// Power means to pop two items from the stack and push the result
+	// of raising one to the power of the other.
+	Power InstructionType = '^'
+
+	// Modulus means to pop two items from the stack and push the result
+	// of running a modulus operation.
 	Modulus InstructionType = '%'
 
-	// complex operators that work with stack-numbers
-	Abs  InstructionType = 'a'
-	Sin  InstructionType = 's'
-	Cos  InstructionType = 'c'
-	Tan  InstructionType = 't'
+	// Abs is used to pop a value from the stack and push the absolute
+	// value back.
+	Abs InstructionType = 'a'
+
+	// Sin is used to pop a value from the stack and push the result
+	// of sin() back.
+	Sin InstructionType = 's'
+
+	// Cos is used to pop a value from the stack and push the result
+	// of cos() back.
+	Cos InstructionType = 'c'
+
+	// Tan is used to pop a value from the stack and push the result
+	// of tan() back.
+	Tan InstructionType = 't'
+
+	// Sqrt is used to pop a value from the stack and push the result
+	// of calculating its square-root back.
 	Sqrt InstructionType = 'q'
 
-	// stack operations
+	// Swap swaps the position of the top two stack-items.
 	Swap InstructionType = 'S'
-	Dup  InstructionType = 'D'
+
+	// Dup duplicates the stacks topmost value.
+	Dup InstructionType = 'D'
 )
 
 // A single instruction will have a thing to do, and optionally a value.
@@ -42,9 +71,9 @@ const (
 // (The value is only used when a float is to be pushed upon the stack.)
 type Instruction struct {
 
-	// The type of instruction this object represents
+	// Type holds the type of instruction this object represents
 	Type InstructionType
 
-	// Value holds the  value of a number to be pushed upon the RPN stack.
+	// Value holds the value of a number to be pushed upon the RPN stack.
 	Value string
 }
