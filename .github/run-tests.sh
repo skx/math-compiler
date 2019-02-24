@@ -1,8 +1,8 @@
 #!/bin/sh
 
+# init modules
+go mod init
 
-pwd
-ls -l
 # Run golang tests
 go test ./...
 
