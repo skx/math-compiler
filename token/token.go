@@ -1,4 +1,4 @@
-// token package contains the tokens that the lexer will produce when
+// Package token contains the tokens that the lexer will produce when
 // parsing an input-expression.
 package token
 
