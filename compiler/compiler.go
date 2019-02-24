@@ -327,7 +327,7 @@ func (c *Compiler) output() string {
 	//
 	// Add on the constants
 	//
-	for v, _ := range c.constants {
+	for v := range c.constants {
 		header += fmt.Sprintf("%s: .double %s\n",
 			c.escapeConstant(v), v)
 	}
