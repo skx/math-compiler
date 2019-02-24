@@ -1,0 +1,15 @@
+#!/bin/bash
+#
+# Build releases for Linux/AMD64
+#
+# Since we output assembly language there's little point building for
+# other systems.
+#
+
+
+# Get the dependencies
+go get -t -v -d $(go list ./...)
+
+export GOOS=linux
+export GOARCH=amd64
+go build -o "math-compiler-linux-amd64"
