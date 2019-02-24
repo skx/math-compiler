@@ -2,7 +2,6 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/skx/math-compiler)](https://goreportcard.com/report/github.com/skx/math-compiler)
 [![license](https://img.shields.io/github/license/skx/math-compiler.svg)](https://github.com/skx/math-compiler/blob/master/LICENSE)
 
-Auto-test
 
 # math-compiler
 
