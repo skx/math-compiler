@@ -66,8 +66,7 @@ const (
 	Dup InstructionType = 'D'
 )
 
-// A single instruction will have a thing to do, and optionally a value.
-//
+// Instruction holds a single thing that the compiler must generate code for.
 // (The value is only used when a float is to be pushed upon the stack.)
 type Instruction struct {
 
