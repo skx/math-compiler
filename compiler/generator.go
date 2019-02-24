@@ -276,7 +276,7 @@ func (c *Compiler) genPlus() string {
 //
 // Note we truncate things to integers in this section of the code.
 //
-// Note we do some comparisions here, and need to generate some (unique) labels
+// Note we do some comparisons here, and need to generate some (unique) labels
 //
 func (c *Compiler) genPower(i int) string {
 	text := `
