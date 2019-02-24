@@ -8,8 +8,9 @@
 
 
 # Get the dependencies
-go get -t -v -d $(go list ./...)
+go mod init
 
 export GOOS=linux
 export GOARCH=amd64
+
 go build -o "math-compiler-linux-amd64"
