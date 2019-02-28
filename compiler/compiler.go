@@ -166,7 +166,7 @@ func (c *Compiler) tokenize() error {
 	// If the first token isn't a number we're in trouble
 	//
 	if c.tokens[0].Type != token.NUMBER {
-		return (fmt.Errorf("We expected the program to begin with a numeric thing!\n"))
+		return (fmt.Errorf("we expected the program to begin with a numeric thing"))
 	}
 
 	//
@@ -176,7 +176,7 @@ func (c *Compiler) tokenize() error {
 		len := len(c.tokens)
 		end := c.tokens[len-1]
 		if end.Type == token.NUMBER {
-			return fmt.Errorf("Program ends with a number, which is invalid!")
+			return fmt.Errorf("rogram ends with a number, which is invalid")
 		}
 	}
 
