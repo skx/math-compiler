@@ -4,13 +4,13 @@
 go mod init
 
 # Install the lint-tool
-go get -u golang.org/x/lint/golint
+GOPATH=/tmp go get -u golang.org/x/lint/golint
 
 # At this point failures cause aborts
 set -e
 
 # Run the linter
-golint -set_exit_status ./...
+/tmp/bin/golint -set_exit_status ./...
 
 # Run our golang tests
 go test ./...
