@@ -3,11 +3,11 @@
 # Install the lint-tool
 go get -u golang.org/x/lint/golint
 
+# Init the modules
+go mod init
+
 # At this point failures cause aborts
 set -e
-
-# Init the modules
-go mod init || true
 
 # Run the linter
 echo "Running linter .."
