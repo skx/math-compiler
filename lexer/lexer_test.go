@@ -11,7 +11,7 @@ func TestParseNumbers(t *testing.T) {
 	input := `3 43 -17 -3`
 
 	tests := []struct {
-		expectedType    token.TokenType
+		expectedType    token.Type
 		expectedLiteral string
 	}{
 		{token.NUMBER, "3"},
@@ -37,7 +37,7 @@ func TestParseFloats(t *testing.T) {
 	input := `3.14 4.3 -1.7 -2.13 sin `
 
 	tests := []struct {
-		expectedType    token.TokenType
+		expectedType    token.Type
 		expectedLiteral string
 	}{
 		{token.NUMBER, "3.14"},
@@ -64,7 +64,7 @@ func TestParseOperators(t *testing.T) {
 	input := `+ - * / % ^ -`
 
 	tests := []struct {
-		expectedType    token.TokenType
+		expectedType    token.Type
 		expectedLiteral string
 	}{
 		{token.PLUS, "+"},
@@ -93,7 +93,7 @@ func TestParseBogus(t *testing.T) {
 	input := `steve 3`
 
 	tests := []struct {
-		expectedType    token.TokenType
+		expectedType    token.Type
 		expectedLiteral string
 	}{
 		{token.ERROR, "Unknown token steve"},
