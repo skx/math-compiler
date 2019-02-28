@@ -1,4 +1,4 @@
-#!/bin/bassh
+#!/bin/bash
 
 # Init the modules
 go mod init
