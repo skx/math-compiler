@@ -212,6 +212,11 @@ func (c *Compiler) makeinternalform() {
 			c.instructions = append(c.instructions,
 				instructions.Instruction{Type: instructions.Multiply})
 
+		case token.FACTORIAL:
+
+			c.instructions = append(c.instructions,
+				instructions.Instruction{Type: instructions.FACTORIAL})
+
 		case token.COS:
 
 			c.instructions = append(c.instructions,
@@ -370,6 +375,9 @@ main:
 
 		case instructions.Abs:
 			body += c.genAbs()
+
+		case instructions.Factorial:
+			body += c.genFactorial(i)
 
 		case instructions.Cos:
 			body += c.genCos()
