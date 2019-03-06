@@ -42,6 +42,8 @@ func (l *Lexer) NextToken() token.Token {
 		tok = newToken(token.PLUS, l.ch)
 	case rune('%'):
 		tok = newToken(token.MOD, l.ch)
+	case rune('!'):
+		tok = newToken(token.FACTORIAL, l.ch)
 	case rune('^'):
 		tok = newToken(token.POWER, l.ch)
 	case rune('-'):
