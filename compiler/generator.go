@@ -132,6 +132,56 @@ func (c *Compiler) genDup() string {
 `
 }
 
+// genFactorial generates assembly code to pop a value from the stack,
+// run a factorial-operation, and store the result back on the stack.
+func (c *Compiler) genFactorial(i int) string {
+	text := `
+        # [Factorial]
+        # ensure there are at least one argument on the stack
+        mov rax, qword ptr [depth]
+        cmp rax, 1
+        jb stack_error
+
+        # pop a value - rounding to an int
+        pop rax
+        mov qword ptr [a], rax
+        fld qword ptr [a]
+        frndint
+        fistp qword ptr [a]
+
+        # get the value in rcx, setup rax to be 1
+        mov rcx, qword ptr [a]
+        mov rax,1
+
+        # If the value is negative, return zero
+        cmp rcx, 0
+        jg again_#ID
+        # jg means jump-if-greater, so if we hit this we had zero/negative
+        # store the result.
+        mov qword ptr[a], 0
+        jmp store_result_#ID
+
+again_#ID:
+        # rax = rax * rcx
+        imul rax, rcx
+        dec rcx
+        jnz again_#ID
+
+        # store
+        mov qword ptr[a], rax
+        fild qword ptr [a]
+        fstp qword ptr [a]
+        mov rax, qword ptr [a]
+
+store_result_#ID:
+        # push result onto stack
+        mov rax, qword ptr [a]
+        push rax
+        # stack size didn't change; popped one, pushed one.
+`
+	return (strings.Replace(text, "#ID", fmt.Sprintf("%d", i), -1))
+}
+
 // genMinus generates assembly code to pop two values from the stack,
 // subtract them and store the result back on the stack.
 func (c *Compiler) genMinus() string {

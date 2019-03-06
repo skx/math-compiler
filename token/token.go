@@ -25,8 +25,9 @@ const (
 	SLASH    = "/"
 
 	// advanced operations
-	MOD   = "%"
-	POWER = "^"
+	MOD       = "%"
+	POWER     = "^"
+	FACTORIAL = "!"
 
 	// misc
 	E  = "e"

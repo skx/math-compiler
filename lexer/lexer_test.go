@@ -61,7 +61,7 @@ func TestParseFloats(t *testing.T) {
 
 // Trivial test of the parsing of operators.
 func TestParseOperators(t *testing.T) {
-	input := `+ - * / % ^ -`
+	input := `+ - * / % ^ - !`
 
 	tests := []struct {
 		expectedType    token.Type
@@ -74,6 +74,7 @@ func TestParseOperators(t *testing.T) {
 		{token.MOD, "%"},
 		{token.POWER, "^"},
 		{token.MINUS, "-"},
+		{token.FACTORIAL, "!"},
 		{token.EOF, ""},
 	}
 	l := New(input)

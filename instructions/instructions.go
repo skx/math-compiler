@@ -39,6 +39,9 @@ const (
 	// of running a modulus operation.
 	Modulus InstructionType = '%'
 
+	// Factorial allows calculating the factorials.
+	Factorial InstructionType = '!'
+
 	// Abs is used to pop a value from the stack and push the absolute
 	// value back.
 	Abs InstructionType = 'a'
