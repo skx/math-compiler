@@ -114,6 +114,16 @@ test_compile '2 8 ^'         256
 test_compile '2 16 ^'      65536
 test_compile '2 30 ^' 1.07374e+09
 
+# factorials
+test_compile '-3 !'             0
+test_compile '0 !'              0
+test_compile '1 !'              1
+test_compile '2 !'              2
+test_compile '3 !'              6
+test_compile '4 !'             24
+test_compile '5 !'            120
+test_compile '6 !'            720
+test_compile '5 5 + !' 3.6288e+06  # 3628800
 
 # division
 test_compile '3 2 /' 1.5
@@ -128,7 +138,6 @@ test_compile '-3 abs' 3
 test_compile '9 sqrt' 3
 test_compile '81 sqrt sqrt' 3
 test_compile '81 sqrt sqrt sqrt' 1.73205
-
 
 # circles
 test_compile '1 sin' 0.841471
