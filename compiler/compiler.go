@@ -215,7 +215,7 @@ func (c *Compiler) makeinternalform() {
 		case token.FACTORIAL:
 
 			c.instructions = append(c.instructions,
-				instructions.Instruction{Type: instructions.FACTORIAL})
+				instructions.Instruction{Type: instructions.Factorial})
 
 		case token.COS:
 
