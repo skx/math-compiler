@@ -1,6 +1,21 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/skx/math-compiler)](https://goreportcard.com/report/github.com/skx/math-compiler)
 [![license](https://img.shields.io/github/license/skx/math-compiler.svg)](https://github.com/skx/math-compiler/blob/master/LICENSE)
 
+Table of Contents
+=================
+
+* [math-compiler](#math-compiler)
+* [Installation](#installation)
+  * [Source Installation go &lt;=  1.11](#source-installation-go---111)
+  * [Source installation go  &gt;= 1.12](#source-installation-go---112)
+* [Quick Overview](#quick-overview)
+* [About Our Output](#about-our-output)
+* [Test Cases](#test-cases)
+  * [Debugging the generated programs](#debugging-the-generated-programs)
+* [Possible Expansion?](#possible-expansion)
+* [Github Setup](#github-setup)
+
+
 # math-compiler
 
 This project contains the simplest possible compiler, which converts mathematical operations into assembly language, allowing all the speed in your sums!
@@ -40,12 +55,27 @@ Some errors will be caught at run-time, as the generated code has support for:
   * For example this program is invalid `3 +`, because the addition operator requires two operands.  (i.e. `3 4 +`)
 
 
-# Installation
+## Installation
+
+There are two ways to install this project from source, which depend on the version of the [go](https://golang.org/) version you're using.
+
+If you just need the binaries you can find them upon the [project release page](https://github.com/skx/math-compiler/releases).
 
 
-Providing you have a working [go-installation](https://golang.org/) you should be able to install this software by running:
+### Source Installation go <=  1.11
 
-    $ go get -u github.com/skx/math-compiler
+If you're using `go` before 1.11 then the following command should fetch/update `overseer`, and install it upon your system:
+
+     $ go get -u github.com/skx/math-compiler
+
+### Source installation go  >= 1.12
+
+If you're using a more recent version of `go` (which is _highly_ recommended), you need to clone to a directory which is not present upon your `GOPATH`:
+
+    git clone https://github.com/skx/math-compiler
+    cd math-compiler
+    go install
+
 
 
 
@@ -186,14 +216,7 @@ if you've an interest in compilers, debuggers, and decompilers.
 
 ## Possible Expansion?
 
-The obvious thing to improve in this compiler is to add support for more floating-point operations.  At the moment basic-support is present, allowing calcuations such as this to produce the correct result:
-
-* `3 2 /`
-  * Correctly returns `1.5`
-* `1 3 / 9 *`
-  * Correctly returns 1/3 * 9 == `3`.
-* `81 sqrt sqrt`
-  * Correctly returns `root(root(81))`
+The obvious thing to improve in this compiler is to add support for more operations.  At the moment support for the most obvious/common operations is present, but perhaps more functions could be added.
 
 
 
@@ -206,12 +229,6 @@ pull-requests are created/updated.  The testing is carried out via
 
 Releases are automated in a similar fashion via [.github/build](.github/build),
 and the [github-action-publish-binaries](https://github.com/skx/github-action-publish-binaries) action.
-
-
-## Questions?
-
-Great.  That concludes our exploration of compilers.
-
 
 
 Steve
