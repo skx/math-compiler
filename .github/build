@@ -7,9 +7,6 @@
 #
 
 
-# Get the dependencies
-go mod init
-
 export GOOS=linux
 export GOARCH=amd64
 
