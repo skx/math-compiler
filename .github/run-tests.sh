@@ -1,21 +1,24 @@
-#!/bin/bash
+#!/bin/sh
 
-# Install the lint-tool
+# Install the lint-tool, and the shadow-tool
 go get -u golang.org/x/lint/golint
-
-# Init the modules
-go mod init
+go get -u golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
 
 # At this point failures cause aborts
 set -e
 
 # Run the linter
-echo "Running linter .."
+echo "Launching linter .."
 golint -set_exit_status ./...
-echo "Linter complete .."
+echo "Completed linter .."
 
-# Run our golang tests
+# Run the shadow-checker
+echo "Launching shadowed-variable check .."
+go vet -vettool=$(which shadow) ./...
+echo "Completed shadowed-variable check .."
+
+# Run golang tests
 go test ./...
 
-# Run functional test-cases
+# Run our functionality tests
 ./test.sh
