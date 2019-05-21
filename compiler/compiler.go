@@ -325,6 +325,7 @@ func (c *Compiler) output() string {
         int: .double 0.0
         fmt: .asciz "Result %g\n"
    div_zero: .asciz "Attempted division by zero.  Aborting\n"
+   overflow: .asciz "Overflow - value out of range.  Aborting\n"
   stack_err: .asciz "Insufficient entries on the stack.  Aborting\n"
  stack_full: .asciz "Too many entries remaining on the stack.  Aborting\n"
 `
@@ -444,6 +445,13 @@ main:
 #
 division_by_zero:
         lea rdi,div_zero
+        jmp print_msg_and_exit
+
+#
+# This is hit when a register is too small to hold a value.
+#
+register_overflow:
+        lea rdi,overflow
         jmp print_msg_and_exit
 
 
