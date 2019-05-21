@@ -176,7 +176,7 @@ func (c *Compiler) tokenize() error {
 		len := len(c.tokens)
 		end := c.tokens[len-1]
 		if end.Type == token.NUMBER {
-			return fmt.Errorf("rogram ends with a number, which is invalid")
+			return fmt.Errorf("program ends with a number, which is invalid")
 		}
 	}
 
@@ -315,14 +315,15 @@ func (c *Compiler) output() string {
 #
 #  depth: used to keep track of stack-depth.
 #
-#    fmt: Used to output the result of the calculation, and div_zero for
-#         the obvious error-case.
+#    fmt: Used to output the result of the calculation, later strings are for
+#         various error-reports.
 #
 .data
           a: .double 0.0
           b: .double 0.0
       depth: .double 0.0
         int: .double 0.0
+
         fmt: .asciz "Result %g\n"
    div_zero: .asciz "Attempted division by zero.  Aborting\n"
    overflow: .asciz "Overflow - value out of range.  Aborting\n"
@@ -331,7 +332,7 @@ func (c *Compiler) output() string {
 `
 
 	//
-	// Add on the constants
+	// Output each of our discovered constants.
 	//
 	for v := range c.constants {
 		header += fmt.Sprintf("%s: .double %s\n",
@@ -343,15 +344,18 @@ func (c *Compiler) output() string {
 # Main is our entry-point.
 #
 # We'll save rbp before we begin
+#
 main:
         push rbp
 
         # Our stack is initially empty (of numbers), so ensure that [depth]
         # is set to zero.
+        #
         # Every time we push a value upon the stack we'll increase this value
         # and before we pop arguments from the stack we'll check there are
         # sufficient values stored.  This will prevent segfaults when user
         # programs are broken.
+        #
         mov qword ptr [depth], 0
 
 `
@@ -377,9 +381,6 @@ main:
 		case instructions.Abs:
 			body += c.genAbs()
 
-		case instructions.Factorial:
-			body += c.genFactorial(i)
-
 		case instructions.Cos:
 			body += c.genCos()
 
@@ -388,6 +389,9 @@ main:
 
 		case instructions.Dup:
 			body += c.genDup()
+
+		case instructions.Factorial:
+			body += c.genFactorial(i)
 
 		case instructions.Minus:
 			body += c.genMinus()
@@ -475,7 +479,8 @@ stack_error:
 #
 # Print a message and terminate.
 #
-# NOTE: We call 'exit' here to allow stdout to be flushed.
+# NOTE: We call 'exit' here to allow stdout to be flushed, and also to ensure
+#       we don't need to balance our stack.
 #
 print_msg_and_exit:
         xor rax,rax
