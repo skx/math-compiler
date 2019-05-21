@@ -34,7 +34,7 @@ func (c *Compiler) escapeConstant(input string) string {
 // run an ABS-operation, and store the result back on the stack.
 func (c *Compiler) genAbs() string {
 	return `
-        # [Abs]
+        # [ABS]
         # ensure there are at least one argument on the stack
         mov rax, qword ptr [depth]
         cmp rax, 1
@@ -136,7 +136,7 @@ func (c *Compiler) genDup() string {
 // run a factorial-operation, and store the result back on the stack.
 func (c *Compiler) genFactorial(i int) string {
 	text := `
-        # [Factorial]
+        # [FACTORIAL]
         # ensure there are at least one argument on the stack
         mov rax, qword ptr [depth]
         cmp rax, 1
@@ -164,6 +164,10 @@ func (c *Compiler) genFactorial(i int) string {
 again_#ID:
         # rax = rax * rcx
         imul rax, rcx
+
+        # value too big?
+        jo register_overflow
+
         dec rcx
         jnz again_#ID
 
@@ -379,6 +383,10 @@ none_one_#ID:
 again_#ID:
            # rax = rax * rcx (which is the original value we started with)
            imul rax,rcx
+
+           # value too big?
+           jo register_overflow
+
            dec rbx
            jnz again_#ID
 
@@ -426,7 +434,7 @@ func (c *Compiler) genPush(value string) string {
 // run a sin-operation, and store the result back on the stack.
 func (c *Compiler) genSin() string {
 	return `
-        # [Sin]
+        # [SIN]
         # ensure there are at least one argument on the stack
         mov rax, qword ptr [depth]
         cmp rax, 1
@@ -453,10 +461,12 @@ func (c *Compiler) genSin() string {
 // push them back, in the other order.
 func (c *Compiler) genSwap() string {
 	return `
+        # [SWAP]
         pop rax
         pop rbx
         push rax
         push rbx
+        # stack size didn't change; popped two, pushed two.
 `
 }
 
@@ -464,6 +474,7 @@ func (c *Compiler) genSwap() string {
 // run a tan-operation, and store the result back on the stack.
 func (c *Compiler) genTan() string {
 	return `
+        # [TAN]
         # pop one value
         pop rax
         mov qword ptr [a], rax
