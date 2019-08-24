@@ -26,7 +26,7 @@ func main() {
 	//
 	// If we're running we're also compiling
 	//
-	if *run == true {
+	if *run {
 		*compile = true
 	}
 
@@ -63,7 +63,7 @@ func main() {
 	// If we're not compiling the assembly language text which was
 	// produced then we just write the program to STDOUT, and terminate.
 	//
-	if *compile == false {
+	if !*compile {
 		fmt.Printf("%s", out)
 		return
 	}
@@ -95,7 +95,7 @@ func main() {
 	//
 	// Running the binary too?
 	//
-	if *run == true {
+	if *run {
 		exe := exec.Command(*program)
 		exe.Stdout = os.Stdout
 		exe.Stderr = os.Stderr
