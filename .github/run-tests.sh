@@ -9,7 +9,7 @@ go get -u honnef.co/go/tools/cmd/staticcheck
 
 # Run the static-check tool.
 t=$(mktemp)
-staticcheck -checks all ./... > $t
+staticcheck -checks all ./... | grep -v "a package comment" > $t
 if [ -s $t ]; then
     echo "Found errors via 'staticcheck'"
     cat $t
