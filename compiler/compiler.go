@@ -136,7 +136,7 @@ func (c *Compiler) tokenize() error {
 
 		// If error then abort.
 		if tok.Type == token.ERROR {
-			return (fmt.Errorf("Error parsing input; token.ERROR returned from the lexer: %s", tok.Literal))
+			return (fmt.Errorf("error parsing input; token.ERROR returned from the lexer: %s", tok.Literal))
 		}
 
 		//
@@ -159,7 +159,7 @@ func (c *Compiler) tokenize() error {
 	// If the program is empty that's an error.
 	//
 	if len(c.tokens) < 1 {
-		return (fmt.Errorf("The input expression was empty"))
+		return (fmt.Errorf("the input expression was empty"))
 	}
 
 	//
