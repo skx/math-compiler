@@ -1,12 +1,12 @@
-// The compiler-package contains the core of our compiler.
+// Package compiler contains the core of our compiler.
 //
 // In brief we go through a three-step process:
 //
-//  1.  It use the lexer to tokenize the expression.
+//  1.  We use the lexer to tokenize the expression.
 //
-//  2.  Convert our program from a series of tokens to an internal form.
+//  2.  We convert our series of tokens to an internal form.
 //
-//  3.  Walk our internal form, generating output for each block.
+//  3.  We walk our internal form, generating output for each block.
 //
 // There are only one minor complication - storing all the input-floats
 // in the data-area of the program.  These require escaping for uniqueness
@@ -15,7 +15,6 @@
 // That said this is a toy, and will remain a toy, so I can live with
 // these problems.
 //
-
 package compiler
 
 import (

@@ -1,3 +1,5 @@
+// Package lexer converts our input-program into a series of tokens,
+// which we can later parse and compile.
 package lexer
 
 import (
