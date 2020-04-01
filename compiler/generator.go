@@ -35,7 +35,7 @@ func (c *Compiler) escapeConstant(input string) string {
 func (c *Compiler) genAbs() string {
 	return `
         # [ABS]
-        # ensure there are at least one argument on the stack
+        # ensure there is at least one argument on the stack
         mov rax, qword ptr [depth]
         cmp rax, 1
         jb stack_error
@@ -62,7 +62,7 @@ func (c *Compiler) genAbs() string {
 func (c *Compiler) genCos() string {
 	return `
         # [COS]
-        # ensure there are at least one argument on the stack
+        # ensure there is at least one argument on the stack
         mov rax, qword ptr [depth]
         cmp rax, 1
         jb stack_error
@@ -123,6 +123,11 @@ func (c *Compiler) genDivide() string {
 func (c *Compiler) genDup() string {
 	return `
         # [DUP]
+        # ensure there is at least one argument on the stack
+        mov rax, qword ptr [depth]
+        cmp rax, 1
+        jb stack_error
+
         pop rax
         push rax
         push rax
@@ -137,7 +142,7 @@ func (c *Compiler) genDup() string {
 func (c *Compiler) genFactorial(i int) string {
 	text := `
         # [FACTORIAL]
-        # ensure there are at least one argument on the stack
+        # ensure there is at least one argument on the stack
         mov rax, qword ptr [depth]
         cmp rax, 1
         jb stack_error
@@ -335,7 +340,7 @@ func (c *Compiler) genPlus() string {
 func (c *Compiler) genPower(i int) string {
 	text := `
         # [POWER]
-        # ensure there is at least two arguments on the stack
+        # ensure there are at least two arguments on the stack
         mov rax, qword ptr [depth]
         cmp rax, 2
         jb stack_error
@@ -435,7 +440,7 @@ func (c *Compiler) genPush(value string) string {
 func (c *Compiler) genSin() string {
 	return `
         # [SIN]
-        # ensure there are at least one argument on the stack
+        # ensure there is at least one argument on the stack
         mov rax, qword ptr [depth]
         cmp rax, 1
         jb stack_error
@@ -462,6 +467,11 @@ func (c *Compiler) genSin() string {
 func (c *Compiler) genSwap() string {
 	return `
         # [SWAP]
+        # ensure there are at least two arguments on the stack
+        mov rax, qword ptr [depth]
+        cmp rax, 2
+        jb stack_error
+
         pop rax
         pop rbx
         push rax
@@ -475,6 +485,11 @@ func (c *Compiler) genSwap() string {
 func (c *Compiler) genTan() string {
 	return `
         # [TAN]
+        # ensure there is at least one argument on the stack
+        mov rax, qword ptr [depth]
+        cmp rax, 1
+        jb stack_error
+
         # pop one value
         pop rax
         mov qword ptr [a], rax
@@ -496,7 +511,7 @@ func (c *Compiler) genTan() string {
 func (c *Compiler) genSqrt() string {
 	return `
         # [SQRT]
-        # ensure there are at least one argument on the stack
+        # ensure there is at least one argument on the stack
         mov rax, qword ptr [depth]
         cmp rax, 1
         jb stack_error
