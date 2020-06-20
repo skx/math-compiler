@@ -82,7 +82,7 @@ If you're using a more recent version of `go` (which is _highly_ recommended), y
 
 ## Quick Overview
 
-The intention of this project is mostly to say "I wrote a compiler", because I've already [experimented with a language](https://github.com/skx/monkey/), and [implemented a BASIC](https://github.com/skx/gobasic/).  The things learned from those projects were pretty useful, even if the actual results were not so obviously useful in themselves.
+The intention of this project is mostly to say "I wrote a compiler", because I've already [experimented with a language](https://github.com/skx/monkey/), an [embedded evaluation engine](https://github.com/skx/evalfilter/), and [implemented a BASIC interpreter](https://github.com/skx/gobasic/).  The things learned from those projects were pretty useful, even if the actual results were not so obviously useful in themselves.
 
 Because there are no shortages of toy-languages, and there is a lot of complexity in writing another for no real gain, I decided to just focus upon a simple core:
 
