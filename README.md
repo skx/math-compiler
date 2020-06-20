@@ -13,6 +13,7 @@ Table of Contents
 * [Test Cases](#test-cases)
   * [Debugging the generated programs](#debugging-the-generated-programs)
 * [Possible Expansion?](#possible-expansion)
+  * [See Also](#see-also)
 * [Github Setup](#github-setup)
 
 
@@ -217,6 +218,14 @@ if you've an interest in compilers, debuggers, and decompilers.
 ## Possible Expansion?
 
 The obvious thing to improve in this compiler is to add support for more operations.  At the moment support for the most obvious/common operations is present, but perhaps more functions could be added.
+
+
+
+## See Also
+
+If you enjoyed this repository, then you might also enjoy my compiler for the [Brainfuck](https://en.wikipedia.org/wiki/Brainfuck) language.  The compiler there compiles brainfuck programs to x86-64 assembly-language:
+
+* [https://github.com/skx/bfcc](https://github.com/skx/bfcc)
 
 
 
