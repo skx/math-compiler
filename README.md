@@ -6,8 +6,6 @@ Table of Contents
 
 * [math-compiler](#math-compiler)
 * [Installation](#installation)
-  * [Source Installation go &lt;=  1.11](#source-installation-go---111)
-  * [Source installation go  &gt;= 1.12](#source-installation-go---112)
 * [Quick Overview](#quick-overview)
 * [About Our Output](#about-our-output)
 * [Test Cases](#test-cases)
@@ -15,6 +13,8 @@ Table of Contents
 * [Possible Expansion?](#possible-expansion)
   * [See Also](#see-also)
 * [Github Setup](#github-setup)
+
+
 
 
 # math-compiler
@@ -56,27 +56,24 @@ Some errors will be caught at run-time, as the generated code has support for:
   * For example this program is invalid `3 +`, because the addition operator requires two operands.  (i.e. `3 4 +`)
 
 
+
 ## Installation
 
-There are two ways to install this project from source, which depend on the version of the [go](https://golang.org/) version you're using.
+If you just need a binary you can find them upon the [project release page](https://github.com/skx/math-compiler/releases), however if you wish to build and install locally you can do that in either of the standard ways:
 
-If you just need the binaries you can find them upon the [project release page](https://github.com/skx/math-compiler/releases).
+1. Install from the latest revision:
 
+```sh
+$ go install github.com/skx/math-compiler@master
+```
 
-### Source Installation go <=  1.11
+2. Or you can clone the source, and build from it:
 
-If you're using `go` before 1.11 then the following command should fetch/update the project and install it upon your system:
-
-     $ go get -u github.com/skx/math-compiler
-
-### Source installation go  >= 1.12
-
-If you're using a more recent version of `go` (which is _highly_ recommended), you need to clone to a directory which is not present upon your `GOPATH`:
-
-    git clone https://github.com/skx/math-compiler
-    cd math-compiler
-    go install
-
+```sh
+$ git clone https://github.com/skx/math-compiler
+$ cd math-compiler
+$ go install .
+```
 
 
 
@@ -98,10 +95,9 @@ However I even simplified that, via the use of a "[Reverse Polish](https://en.wi
 
 
 
-
 ## About Our Output
 
-The output of `math-compiler` will typically be an assembly-language file, which then needs to be compiled before it may be executed.
+The output of `math-compiler` will be an assembly-language file, which then needs to be compiled before it may be executed.
 
 Given our previous example of `2 + ( 4 * 54)` we can compile & execute that program like so:
 
@@ -128,6 +124,7 @@ Or to compile __and__ execute directly:
     Result 12
 
 
+
 ## Test Cases
 
 The codebase itself contains some simple test-cases, however these are not comprehensive as a large part of our operation is merely to populate a simple template-file, and it is hard to test that.
@@ -151,8 +148,6 @@ they produce the correct result.
     ...
     Expected output found for '2 30 ^' [1073741824]
     ...
-
-
 
 
 ### Debugging the generated programs
@@ -213,6 +208,7 @@ values as well as the raw values:
 
 Further documentation can be found in the `gdb` manual, which is worth reading
 if you've an interest in compilers, debuggers, and decompilers.
+
 
 
 ## Possible Expansion?
