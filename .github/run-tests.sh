@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# I don't even ..
+go env -w GOFLAGS="-buildvcs=false"
+
 # Install the tools we use to test our code-quality.
 #
 # Here we setup the tools to install only if the "CI" environmental variable
@@ -7,7 +10,7 @@
 #
 # NOTE: Github Actions always set CI=true
 #
-if [ ! -z "${CI}" ] ; then
+if [ -n "${CI}" ] ; then
     go install golang.org/x/lint/golint@latest
     go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@latest
     go install honnef.co/go/tools/cmd/staticcheck@latest
@@ -16,14 +19,14 @@ fi
 
 # Run the static-check tool.
 t=$(mktemp)
-staticcheck -checks all ./... > $t
-if [ -s $t ]; then
+staticcheck -checks all ./... > "$t"
+if [ -s "$t" ]; then
     echo "Found errors via 'staticcheck'"
-    cat $t
-    rm $t
+    cat "$t"
+    rm "$t"
     exit 1
 fi
-rm $t
+rm "$t"
 
 # At this point failures cause aborts
 set -e
@@ -35,7 +38,7 @@ echo "Completed linter .."
 
 # Run the shadow-checker
 echo "Launching shadowed-variable check .."
-go vet -vettool=$(which shadow) ./...
+go vet -vettool="$(which shadow)" ./...
 echo "Completed shadowed-variable check .."
 
 # Run golang tests
