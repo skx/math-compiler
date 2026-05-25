@@ -223,6 +223,10 @@ If you enjoyed this repository, then you might also enjoy my compiler for the [B
 
 * [https://github.com/skx/bfcc](https://github.com/skx/bfcc)
 
+I also put together a _real compiler_, which generates assembly for a real language - including support for integers, floating point, and strings.  That can be used for mathematical tests too!
+
+* [https://github.com/skx/s-lang](https://github.com/skx/s-lang)
+
 
 
 ## Github Setup
