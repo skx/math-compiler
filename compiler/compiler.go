@@ -2,11 +2,11 @@
 //
 // In brief we go through a three-step process:
 //
-//  1.  We use the lexer to tokenize the expression.
+//  1. We use the lexer to tokenize the expression.
 //
-//  2.  We convert our series of tokens to an internal form.
+//  2. We convert our series of tokens to an internal form.
 //
-//  3.  We walk our internal form, generating output for each block.
+//  3. We walk our internal form, generating output for each block.
 //
 // There are only one minor complication - storing all the input-floats
 // in the data-area of the program.  These require escaping for uniqueness
@@ -14,7 +14,6 @@
 //
 // That said this is a toy, and will remain a toy, so I can live with
 // these problems.
-//
 package compiler
 
 import (
@@ -318,15 +317,23 @@ func (c *Compiler) output() string {
 #         various error-reports.
 #
 .data
-          a: .double 0.0
-          b: .double 0.0
+.align 8
+	  a: .double 0.0
+.align 8
+	  b: .double 0.0
+.align 8
       depth: .double 0.0
-        int: .double 0.0
-
-        fmt: .asciz "Result %g\n"
+.align 8
+	int: .double 0.0
+.align 8
+	fmt: .asciz "Result %g\n"
+.align 8
    div_zero: .asciz "Attempted division by zero.  Aborting\n"
+.align 8
    overflow: .asciz "Overflow - value out of range.  Aborting\n"
+.align 8
   stack_err: .asciz "Insufficient entries on the stack.  Aborting\n"
+.align 8
  stack_full: .asciz "Too many entries remaining on the stack.  Aborting\n"
 `
 
@@ -334,28 +341,29 @@ func (c *Compiler) output() string {
 	// Output each of our discovered constants.
 	//
 	for v := range c.constants {
-		header += fmt.Sprintf("%s: .double %s\n",
+		header += fmt.Sprintf(".align 8\n%s: .double %s\n",
 			c.escapeConstant(v), v)
 	}
 
 	header += `
+.text
 #
 # Main is our entry-point.
 #
 # We'll save rbp before we begin
 #
 main:
-        push rbp
+	push rbp
 
-        # Our stack is initially empty (of numbers), so ensure that [depth]
-        # is set to zero.
-        #
-        # Every time we push a value upon the stack we'll increase this value
-        # and before we pop arguments from the stack we'll check there are
-        # sufficient values stored.  This will prevent segfaults when user
-        # programs are broken.
-        #
-        mov qword ptr [depth], 0
+	# Our stack is initially empty (of numbers), so ensure that [depth]
+	# is set to zero.
+	#
+	# Every time we push a value upon the stack we'll increase this value
+	# and before we pop arguments from the stack we'll check there are
+	# sufficient values stored.  This will prevent segfaults when user
+	# programs are broken.
+	#
+	mov qword ptr [depth], 0
 
 `
 	if c.debug {
@@ -426,36 +434,36 @@ main:
 	}
 
 	footer := `
-        # [PRINT]
-        # ensure there is only one remaining argument upon the stack
-        mov rax, qword ptr [depth]
-        cmp rax, 1
-        jne stack_too_full      # should be only one entry.
-        # print the result
-        pop rax
-        mov qword ptr [a], rax
-        lea rdi,fmt             # format string
-        movq xmm0, [a]          # argument
-        movq rax, 1             # argument count
-        call printf
-        pop rbp
-        xor rax,rax
-        ret
+	# [PRINT]
+	# ensure there is only one remaining argument upon the stack
+	mov rax, qword ptr [depth]
+	cmp rax, 1
+	jne stack_too_full      # should be only one entry.
+	# print the result
+	pop rax
+	mov qword ptr [a], rax
+	lea rdi,fmt             # format string
+	movq xmm0, [a]          # argument
+	movq rax, 1             # argument count
+	call printf
+	pop rbp
+	xor rax,rax
+	ret
 
 
 #
 # This is hit when a division by zero is attempted.
 #
 division_by_zero:
-        lea rdi,div_zero
-        jmp print_msg_and_exit
+	lea rdi,div_zero
+	jmp print_msg_and_exit
 
 #
 # This is hit when a register is too small to hold a value.
 #
 register_overflow:
-        lea rdi,overflow
-        jmp print_msg_and_exit
+	lea rdi,overflow
+	jmp print_msg_and_exit
 
 
 #
@@ -463,8 +471,8 @@ register_overflow:
 # stack has too many entries upon it.
 #
 stack_too_full:
-        lea rdi,stack_full
-        jmp print_msg_and_exit
+	lea rdi,stack_full
+	jmp print_msg_and_exit
 
 #
 #
@@ -472,8 +480,8 @@ stack_too_full:
 # a given operation.  (For example '3 +', or '3 4 + /'.)
 #
 stack_error:
-        lea rdi,stack_err
-        # jmp print_msg_and_exit - JMP is unnecessary here.
+	lea rdi,stack_err
+	# jmp print_msg_and_exit - JMP is unnecessary here.
 
 #
 # Print a message and terminate.
@@ -482,10 +490,10 @@ stack_error:
 #       we don't need to balance our stack.
 #
 print_msg_and_exit:
-        xor rax,rax
-        call printf
-        mov rdi,0
-        call exit
+	xor rax,rax
+	call printf
+	mov rdi,0
+	call exit
 
 `
 
